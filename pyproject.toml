@@ -48,6 +48,13 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.1.0",
     "mypy>=1.6.0",
+    "bandit>=1.7.0",
+    "pip-audit>=2.7.0",
+    "pre-commit>=3.5.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
 ]
 
 [project.scripts]
@@ -57,6 +64,9 @@ fitcheck = "fitcheck.cli:main"
 Homepage = "https://github.com/neoline361-art/fitcheck"
 Repository = "https://github.com/neoline361-art/fitcheck"
 Issues = "https://github.com/neoline361-art/fitcheck/issues"
+Documentation = "https://github.com/neoline361-art/fitcheck/tree/main/docs"
+Changelog = "https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"
+Funding = "https://github.com/sponsors/neoline361-art"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -82,6 +92,13 @@ strict = true
 ignore_missing_imports = true
 warn_return_any = true
 warn_unused_configs = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101", "B311"]
 
 [tool.coverage.run]
 source = ["fitcheck"]

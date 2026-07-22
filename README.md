@@ -1,20 +1,31 @@
 <p align="center">
   <h1 align="center">FitCheck</h1>
-  <p align="center">Zero-boilerplate ML data validation and model evaluation.</p>
+  <p align="center"><em>Zero-boilerplate ML data validation and model evaluation.</em></p>
   <p align="center">
-    <img src="https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white" alt="Python 3.9+">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0">
-    <img src="https://img.shields.io/badge/Tests-22%2B-brightgreen" alt="22+ tests">
+    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white" alt="Python 3.9+"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-28%20passing-brightgreen" alt="Tests"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Coverage-82%25-brightgreen" alt="Coverage"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/blob/main/SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue" alt="Security"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-v2.0.0-blue" alt="Changelog"></a>
   </p>
 </p>
 
 ---
+
+**FitCheck** validates datasets, evaluates ML models, and detects distribution drift — all with one-line commands that generate shareable HTML reports.
+
+| Package | Release | Stats |
+|---------|---------|-------|
+| fitcheck | `pip install fitcheck` | ![Platform: Linux, macOS, Windows]("https://img.shields.io/badge/platform-linux--macos--windows-lightgrey") |
 
 ## Philosophy
 
 - **Zero Config** — Pass a file path. Get answers. No YAML, no setup.
 - **Immutability** — FitCheck diagnoses, never silently modifies. Fix scripts are transparent and inspectable.
 - **Shareability** — Every check generates a self-contained HTML report ready for Slack, email, or GitHub.
+- **No Telemetry** — Zero outbound network calls. All computation is local.
 
 ## Installation
 
@@ -22,7 +33,7 @@
 pip install fitcheck
 ```
 
-Or install from source for development:
+From source:
 
 ```bash
 git clone https://github.com/neoline361-art/fitcheck.git
@@ -32,76 +43,110 @@ pip install -e ".[dev]"
 
 ## Quick Start
 
-### 1. Validate a Dataset
-
 ```python
 import fitcheck
 
-# One-line health check
-issues = fitcheck.check("data.csv", target="label")
-# Generates: fitcheck_report.html
+# 1. Validate a dataset
+issues = fitcheck.check("data.csv", target="label", auto_fix=True)
+
+# 2. Evaluate a model
+metrics = fitcheck.report(model, X_test, y_test)
+
+# 3. Detect drift
+results = fitcheck.detect_drift("train.csv", "production.csv")
 ```
 
-Or via CLI:
+### CLI
 
 ```bash
 fitcheck check data.csv --target label --auto-fix
+fitcheck report model.pkl X_test.npy y_test.npy
+fitcheck drift train.csv production.csv --threshold 0.05
+fitcheck demo
 ```
 
-### 2. Evaluate a Model
+## What FitCheck Checks
 
-```python
-from sklearn.ensemble import RandomForestClassifier
+| Check | Method | Severity |
+|-------|--------|----------|
+| Missing values | Null ratio >5% / >20% | Warning / Critical |
+| Duplicate rows | `df.duplicated().sum()` | Warning |
+| Constant columns | Single unique value | Warning |
+| Class imbalance | Majority class >80% | Warning |
+| Outliers | IQR method (1.5×) | Info |
+| Numeric drift | KS test (p<0.05) | Critical |
+| Categorical drift | Chi-squared (p<0.05) | Critical |
 
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+## Documentation
 
-metrics = fitcheck.report(model, X_test, y_test)
-# Auto-detects classification vs regression
-# Generates: model_report.html with metrics + plots
-```
+| Resource | Description |
+|----------|-------------|
+| [API Reference](docs/API.md) | Complete API documentation with parameters, returns, and examples |
+| [Architecture](docs/ARCHITECTURE.md) | Module design and design decisions |
+| [Design Decisions](docs/DECISIONS.md) | Why certain technical choices were made |
+| [FAQ](docs/FAQ.md) | Frequently asked questions |
+| [Examples](examples/basic_usage.py) | Runnable usage examples |
+| [Benchmarks](benchmarks/results.md) | Performance benchmarks on standard hardware |
 
-### 3. Detect Drift
+## Project Maturity
 
-```python
-results = fitcheck.detect_drift("train.csv", "production.csv")
-# KS test for numeric, Chi-squared for categorical
-# Generates: drift_report.html
-```
+| Aspect | Status |
+|--------|--------|
+| Version | v2.0.0 — Semantic Versioning |
+| Tests | 28 tests, 82% coverage |
+| Type Safety | mypy strict mode clean |
+| Linting | ruff clean |
+| Security | bandit + pip-audit in CI |
+| License | Apache 2.0 |
+| Platforms | Linux, macOS, Windows (Python 3.9–3.13) |
+| PyPI | Coming in v2.1 |
 
-## What's New in v2.0
+## Limitations
 
-- **Auto-Fix Scripts** — `auto_fix=True` generates a transparent Python script with every fix step commented. Review before running.
-- **Type Safety** — Full type hints, mypy strict mode clean.
-- **CI Integration** — GitHub Actions workflow + PR bot that validates data file changes automatically.
-- **22+ Tests** — pytest with 80%+ coverage across edge cases.
-
-## Architecture
-
-| Module | Purpose |
-|--------|---------|
-| `check.py` | Dataset health: missing values, duplicates, outliers, class imbalance, constant columns |
-| `report.py` | Model evaluation: auto-detects classification/regression, metrics + visualizations |
-| `drift.py` | Drift detection: KS test (numeric), Chi-squared (categorical) |
-| `fix.py` | Transparent fix script generation from diagnostic output |
-| `html.py` | Dark-mode HTML report rendering (self-contained, no external assets) |
-| `cli.py` | Terminal interface: `fitcheck check`, `fitcheck report`, `fitcheck drift` |
+- Supports only pandas DataFrames (CSV, Parquet)
+- Drift: KS test for numeric, Chi-squared for categorical
+- Deep learning model evaluation is not implemented
+- Datasets must fit in memory
+- No streaming or distributed processing
 
 ## Development
 
 ```bash
-# Run tests with coverage
+# Setup
+pip install -e ".[dev]"
+pre-commit install
+
+# Run all quality gates
+ruff check fitcheck/
+mypy fitcheck/
+bandit -r fitcheck/ -x tests
+pip-audit
 pytest --cov=fitcheck --cov-report=term-missing
 
-# Lint
-ruff check fitcheck/
-
-# Type check
-mypy fitcheck/
-
-# Demo (generates 3 HTML reports)
+# Demo
 python demo.py
 ```
+
+## Versioning
+
+FitCheck follows [Semantic Versioning](https://semver.org/). Given a version `MAJOR.MINOR.PATCH`:
+
+- **MAJOR** — Breaking API changes
+- **MINOR** — New features, backward compatible
+- **PATCH** — Bug fixes, backward compatible
+
+See [CHANGELOG.md](CHANGELOG.md) for per-release details.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). TL;DR:
+1. Tests must pass
+2. Ruff + mypy must be clean
+3. Add CHANGELOG entry
+
+## Security
+
+See [SECURITY.md](SECURITY.md). Report vulnerabilities to neoline361@gmail.com.
 
 ## License
 

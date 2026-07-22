@@ -1,0 +1,33 @@
+name: Bug Report
+description: Report a bug in FitCheck
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Check existing issues before submitting.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Steps or minimal code to reproduce.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: FitCheck Version
+      placeholder: e.g. 2.0.0
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      placeholder: e.g. 3.12

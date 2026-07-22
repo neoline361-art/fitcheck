@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,13 +19,24 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: |
+          pip install -e ".[dev]"
+          pip install bandit pip-audit
       - name: Lint with ruff
         run: ruff check fitcheck/
       - name: Type check with mypy
         run: mypy fitcheck/
+      - name: Security scan with bandit
+        run: bandit -r fitcheck/ -x tests
+      - name: Audit dependencies
+        run: pip-audit
       - name: Test with pytest
         run: pytest --cov=fitcheck --cov-report=term-missing
+      - name: Coverage badge
+        run: |
+          coverage=$(python -c "import json; print(json.load(open('htmlcov/status.json'))['note'])")
+          echo "coverage=$coverage" >> $GITHUB_OUTPUT
+        id: cov
 
   demo:
     runs-on: ubuntu-latest
