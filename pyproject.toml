@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fitcheck"
+version = "2.0.0"
+description = "Zero-boilerplate ML data validation and model evaluation."
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+authors = [
+    {name = "neoline361-art"},
+]
+keywords = [
+    "machine-learning",
+    "data-validation",
+    "data-quality",
+    "model-evaluation",
+    "drift-detection",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "pandas>=1.5.0",
+    "numpy>=1.23.0",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.6.0",
+    "scipy>=1.10.0",
+    "jinja2>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "mypy>=1.6.0",
+]
+
+[project.scripts]
+fitcheck = "fitcheck.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/neoline361-art/fitcheck"
+Repository = "https://github.com/neoline361-art/fitcheck"
+Issues = "https://github.com/neoline361-art/fitcheck/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--cov=fitcheck",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "-v",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.coverage.run]
+source = ["fitcheck"]
+omit = ["tests/*", "demo.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise ImportError",
+]
