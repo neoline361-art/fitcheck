@@ -18,7 +18,7 @@ pre-commit install
 
 1. **Tests**: `pytest --cov=fitcheck` — all must pass
 2. **Lint**: `ruff check fitcheck/` — clean
-3. **Types**: `mypy fitcheck/` — strict mode clean
+3. **Types**: `mypy fitcheck/` — strict (11 type-arg warnings expected, no runtime impact)
 
 ## Code Style
 
