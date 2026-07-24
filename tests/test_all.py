@@ -327,3 +327,20 @@ class TestIntegration:
         assert callable(check)
         assert callable(report)
         assert callable(detect_drift)
+
+    def test_cli_help(self) -> None:
+        """CLI --help prints usage without errors."""
+        # divorced-dad: argparse exits with SystemExit(0) on --help, catch it
+        from fitcheck.cli import main
+        import sys
+        try:
+            main(["--help"])
+        except SystemExit as e:
+            assert e.code == 0
+
+    def test_cli_demo(self) -> None:
+        """CLI demo runs via main() without crashing."""
+        # divorced-dad: smoke test CLI entry point, skip subprocess complexity
+        from fitcheck.cli import main
+        result = main(["demo"])
+        assert result == 0

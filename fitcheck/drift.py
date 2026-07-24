@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -13,11 +13,11 @@ from fitcheck.html import render_drift_html
 
 
 def detect_drift(
-    reference: Union[str, pd.DataFrame],
-    production: Union[str, pd.DataFrame],
+    reference: str | pd.DataFrame,
+    production: str | pd.DataFrame,
     output: str = "drift_report.html",
     threshold: float = 0.05,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Detect distribution drift between reference and production data.
 
     Args:
@@ -33,7 +33,7 @@ def detect_drift(
     prod_df = _load_data(production)
 
     common_cols = [c for c in ref_df.columns if c in prod_df.columns]
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     for col in common_cols:
         ref_col = ref_df[col].dropna()
@@ -51,7 +51,7 @@ def detect_drift(
     return results
 
 
-def _load_data(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
+def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
     """Load data from path or return DataFrame as-is."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
@@ -64,7 +64,7 @@ def _load_data(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
 
 def _ks_test(
     ref_col: pd.Series, prod_col: pd.Series, threshold: float
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Kolmogorov-Smirnov test for numeric columns."""
     ref_vals = pd.to_numeric(ref_col, errors="coerce").dropna()
     prod_vals = pd.to_numeric(prod_col, errors="coerce").dropna()
@@ -99,7 +99,7 @@ def _ks_test(
 
 def _chi2_test(
     ref_col: pd.Series, prod_col: pd.Series, threshold: float
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Chi-squared test for categorical columns."""
     ref_counts = ref_col.value_counts()
     prod_counts = prod_col.value_counts()

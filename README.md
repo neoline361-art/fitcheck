@@ -18,7 +18,7 @@
 
 | Package | Release | Stats |
 |---------|---------|-------|
-| fitcheck | `pip install fitcheck` | ![Platform: Linux, macOS, Windows]("https://img.shields.io/badge/platform-linux--macos--windows-lightgrey") |
+| fitcheck | `pip install git+https://github.com/neoline361-art/fitcheck.git` | ![Platform: Linux, macOS, Windows]("https://img.shields.io/badge/platform-linux--macos--windows-lightgrey") |
 
 ## Philosophy
 
@@ -30,10 +30,10 @@
 ## Installation
 
 ```bash
-pip install fitcheck
+pip install git+https://github.com/neoline361-art/fitcheck.git
 ```
 
-From source:
+From source (for development):
 
 ```bash
 git clone https://github.com/neoline361-art/fitcheck.git
@@ -41,28 +41,32 @@ cd fitcheck
 pip install -e ".[dev]"
 ```
 
-## Quick Start
+## Quick Start — 30 Seconds
 
 ```python
 import fitcheck
 
 # 1. Validate a dataset
-issues = fitcheck.check("data.csv", target="label", auto_fix=True)
+issues = fitcheck.check("data.csv", target="label")
+# → Opens fitcheck_report.html with issues, stats, preview
 
 # 2. Evaluate a model
 metrics = fitcheck.report(model, X_test, y_test)
+# → Opens model_report.html with metrics + plots
 
 # 3. Detect drift
 results = fitcheck.detect_drift("train.csv", "production.csv")
+# → Opens drift_report.html with per-feature drift results
 ```
 
-### CLI
+### CLI (same thing, no Python needed)
 
 ```bash
-fitcheck check data.csv --target label --auto-fix
-fitcheck report model.pkl X_test.npy y_test.npy
-fitcheck drift train.csv production.csv --threshold 0.05
-fitcheck demo
+# Install from source until PyPI release (coming in v2.1)
+pip install git+https://github.com/neoline361-art/fitcheck.git
+fitcheck check data.csv --target label
+fitcheck drift train.csv production.csv
+fitcheck demo  # runs everything in one command
 ```
 
 ## What FitCheck Checks
@@ -94,9 +98,9 @@ fitcheck demo
 |--------|--------|
 | Version | v2.0.0 — Semantic Versioning |
 | Tests | 28 tests, 82% coverage |
-| Type Safety | mypy strict mode clean |
+| Type Safety | mypy strict — 11 type-arg warnings (all ndarray, no runtime impact) |
 | Linting | ruff clean |
-| Security | bandit + pip-audit in CI |
+| Security | bandit + pip-audit (pickle warning expected for model loading) |
 | License | Apache 2.0 |
 | Platforms | Linux, macOS, Windows (Python 3.9–3.13) |
 | PyPI | Coming in v2.1 |

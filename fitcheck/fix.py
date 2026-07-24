@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -25,7 +24,7 @@ class FixScriptGenerator:
 
     def __init__(self, engine: str = "pandas") -> None:
         self.engine = engine
-        self.actions: List[FixAction] = []
+        self.actions: list[FixAction] = []
 
     def add(self, action: FixAction) -> None:
         """Add a fix action to the script."""
@@ -33,7 +32,7 @@ class FixScriptGenerator:
 
     def generate(self, input_path: str, output_path: str = "cleaned_data.csv") -> str:
         """Generate the complete Python fix script as a string."""
-        lines: List[str] = []
+        lines: list[str] = []
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         lines.append("\"\"\"Auto-generated FitCheck Fix Script")
@@ -114,7 +113,7 @@ class FixScriptGenerator:
 
 
 def generate_fix_script(
-    diagnostics: Dict[str, Any], input_path: str, script_path: str = "fitcheck_fix_script.py"
+    diagnostics: dict[str, Any], input_path: str, script_path: str = "fitcheck_fix_script.py"
 ) -> str:
     """Convert diagnostics into a fix script."""
     generator = FixScriptGenerator()
@@ -137,7 +136,7 @@ def generate_fix_script(
     return generator.generate(input_path)
 
 
-def _to_action(issue: Dict[str, Any]) -> Optional[FixAction]:
+def _to_action(issue: dict[str, Any]) -> FixAction | None:
     """Convert a diagnostic issue dict into a FixAction."""
     itype = issue.get("type", "")
     col = issue.get("column", "")
@@ -210,6 +209,6 @@ def _to_action(issue: Dict[str, Any]) -> Optional[FixAction]:
             severity=sev,
             description=msg,
             code=f"# Class imbalance in {col}: use SMOTE or class_weight",
-            rationale=f"Address imbalance during model training",
+            rationale="Address imbalance during model training",
         )
     return None

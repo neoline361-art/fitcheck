@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import base64
 import io
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from sklearn import metrics as sk_metrics
 
 from fitcheck.html import render_report_html
@@ -18,32 +20,32 @@ from fitcheck.html import render_report_html
 
 def report(
     model: Any,
-    X_test: Union[pd.DataFrame, np.ndarray],
-    y_test: Union[pd.Series, np.ndarray],
+    x_test: pd.DataFrame | np.ndarray,
+    y_test: pd.Series | np.ndarray,
     output: str = "model_report.html",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Evaluate a trained model and generate an HTML report.
 
     Args:
         model: Trained scikit-learn model with a predict method.
-        X_test: Test features.
+        x_test: Test features.
         y_test: Test targets.
         output: Path for the generated HTML report.
 
     Returns:
         Dictionary containing all computed metrics.
     """
-    X_test = _to_array(X_test)
-    y_test = _to_array(y_test)
+    x_test_arr = _to_array(x_test)
+    y_test_arr = _to_array(y_test)
 
-    task = _detect_task(y_test)
+    task = _detect_task(y_test_arr)
 
     if task == "classification":
-        metrics, plots = _classification_report(model, X_test, y_test)
+        metrics, plots = _classification_report(model, x_test_arr, y_test_arr)
     else:
-        metrics, plots = _regression_report(model, X_test, y_test)
+        metrics, plots = _regression_report(model, x_test_arr, y_test_arr)
 
-    importance = _tree_importance(model, X_test)
+    importance = _tree_importance(model, x_test_arr)
     if importance:
         metrics["feature_importance"] = importance
 
@@ -59,7 +61,7 @@ def _detect_task(y_test: np.ndarray) -> str:
     return "regression"
 
 
-def _to_array(data: Union[pd.DataFrame, pd.Series, np.ndarray]) -> np.ndarray:
+def _to_array(data: pd.DataFrame | pd.Series | np.ndarray) -> np.ndarray:
     """Convert pandas or numpy input to numpy array."""
     if hasattr(data, "values"):
         return data.values
@@ -67,25 +69,25 @@ def _to_array(data: Union[pd.DataFrame, pd.Series, np.ndarray]) -> np.ndarray:
 
 
 def _classification_report(
-    model: Any, X_test: np.ndarray, y_test: np.ndarray
-) -> Tuple[Dict[str, Any], Dict[str, str]]:
+    model: Any, x_test: np.ndarray, y_test: np.ndarray
+) -> tuple[dict[str, Any], dict[str, str]]:
     """Generate classification metrics and plots."""
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(x_test)
 
-    metrics: Dict[str, Any] = {
+    metrics: dict[str, Any] = {
         "accuracy": round(float(sk_metrics.accuracy_score(y_test, y_pred)), 4),
         "precision": round(float(sk_metrics.precision_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
         "recall": round(float(sk_metrics.recall_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
         "f1": round(float(sk_metrics.f1_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
     }
 
-    plots: Dict[str, str] = {}
+    plots: dict[str, str] = {}
 
     # Confusion matrix heatmap
     if len(np.unique(y_test)) <= 10:
         cm = sk_metrics.confusion_matrix(y_test, y_pred)
         fig, ax = plt.subplots(figsize=(6, 5))
-        im = ax.imshow(cm, cmap="Blues")
+        ax.imshow(cm, cmap="Blues")
         ax.set_title("Confusion Matrix")
         for i in range(cm.shape[0]):
             for j in range(cm.shape[1]):
@@ -98,7 +100,7 @@ def _classification_report(
 
     # ROC curve (binary only)
     if len(np.unique(y_test)) == 2 and hasattr(model, "predict_proba"):
-        y_prob = model.predict_proba(X_test)[:, 1]
+        y_prob = model.predict_proba(x_test)[:, 1]
         fpr, tpr, _ = sk_metrics.roc_curve(y_test, y_prob)
         roc_auc = sk_metrics.roc_auc_score(y_test, y_prob)
         metrics["roc_auc"] = round(float(roc_auc), 4)
@@ -118,20 +120,20 @@ def _classification_report(
 
 
 def _regression_report(
-    model: Any, X_test: np.ndarray, y_test: np.ndarray
-) -> Tuple[Dict[str, Any], Dict[str, str]]:
+    model: Any, x_test: np.ndarray, y_test: np.ndarray
+) -> tuple[dict[str, Any], dict[str, str]]:
     """Generate regression metrics and plots."""
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(x_test)
 
     mse = float(sk_metrics.mean_squared_error(y_test, y_pred))
-    metrics: Dict[str, Any] = {
+    metrics: dict[str, Any] = {
         "mse": round(mse, 4),
         "rmse": round(np.sqrt(mse), 4),
         "mae": round(float(sk_metrics.mean_absolute_error(y_test, y_pred)), 4),
         "r2": round(float(sk_metrics.r2_score(y_test, y_pred)), 4),
     }
 
-    plots: Dict[str, str] = {}
+    plots: dict[str, str] = {}
 
     # Residuals plot
     residuals = y_test - y_pred
@@ -162,7 +164,7 @@ def _regression_report(
     return metrics, plots
 
 
-def _tree_importance(model: Any, X_test: np.ndarray) -> Optional[Dict[str, float]]:
+def _tree_importance(model: Any, x_test: np.ndarray) -> dict[str, float] | None:
     """Extract feature importances from tree-based models."""
     if not hasattr(model, "feature_importances_"):
         return None
@@ -172,7 +174,7 @@ def _tree_importance(model: Any, X_test: np.ndarray) -> Optional[Dict[str, float
     return {name: round(float(imp), 4) for name, imp in top}
 
 
-def _fig_to_base64(fig: plt.Figure) -> str:
+def _fig_to_base64(fig: Figure) -> str:
     """Convert a matplotlib figure to a base64-encoded PNG string."""
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
