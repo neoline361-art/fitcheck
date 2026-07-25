@@ -18,7 +18,7 @@
 
 | Package | Release | Stats |
 |---------|---------|-------|
-| fitcheck | `pip install git+https://github.com/neoline361-art/fitcheck.git` | ![Platform: Linux, macOS, Windows]("https://img.shields.io/badge/platform-linux--macos--windows-lightgrey") |
+| data-fitcheck | `pip install data-fitcheck` | ![Platform: Linux, macOS, Windows]("https://img.shields.io/badge/platform-linux--macos--windows-lightgrey") |
 
 ## Philosophy
 
@@ -30,7 +30,7 @@
 ## Installation
 
 ```bash
-pip install git+https://github.com/neoline361-art/fitcheck.git
+pip install data-fitcheck
 ```
 
 From source (for development):
@@ -62,8 +62,7 @@ results = fitcheck.detect_drift("train.csv", "production.csv")
 ### CLI (same thing, no Python needed)
 
 ```bash
-# Install from source until PyPI release (coming in v2.1)
-pip install git+https://github.com/neoline361-art/fitcheck.git
+pip install data-fitcheck
 fitcheck check data.csv --target label
 fitcheck drift train.csv production.csv
 fitcheck demo  # runs everything in one command
@@ -97,13 +96,13 @@ fitcheck demo  # runs everything in one command
 | Aspect | Status |
 |--------|--------|
 | Version | v2.0.0 — Semantic Versioning |
-| Tests | 28 tests, 82% coverage |
+| Tests | 30 tests, 82% coverage |
 | Type Safety | mypy strict — 11 type-arg warnings (all ndarray, no runtime impact) |
 | Linting | ruff clean |
 | Security | bandit + pip-audit (pickle warning expected for model loading) |
 | License | Apache 2.0 |
 | Platforms | Linux, macOS, Windows (Python 3.9–3.13) |
-| PyPI | Coming in v2.1 |
+| PyPI | v2.0.0 — `pip install data-fitcheck` |
 
 ## Limitations
 
