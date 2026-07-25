@@ -9,7 +9,7 @@
     <a href="https://pypi.org/project/data-fitcheck/"><img src="https://img.shields.io/pypi/v/data-fitcheck?color=blue" alt="PyPI"></a>
     <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Coverage-82%25-brightgreen" alt="Coverage"></a>
     <a href="https://github.com/neoline361-art/fitcheck/blob/main/SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue" alt="Security"></a>
-    <a href="https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-v2.0.0-blue" alt="Changelog"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-v2.0.1-blue" alt="Changelog"></a>
   </p>
 </p>
 
@@ -69,6 +69,8 @@ fitcheck drift train.csv production.csv
 fitcheck demo  # runs everything in one command
 ```
 
+> 💡 **Try it right now:** `pip install data-fitcheck && fitcheck demo`
+
 ## What FitCheck Checks
 
 | Check | Method | Severity |
@@ -96,14 +98,14 @@ fitcheck demo  # runs everything in one command
 
 | Aspect | Status |
 |--------|--------|
-| Version | v2.0.0 — Semantic Versioning |
+| Version | v2.0.1 — Semantic Versioning |
 | Tests | 30 tests, 82% coverage |
 | Type Safety | mypy strict — 11 type-arg warnings (all ndarray, no runtime impact) |
 | Linting | ruff clean |
 | Security | bandit + pip-audit (pickle warning expected for model loading) |
 | License | Apache 2.0 |
 | Platforms | Linux, macOS, Windows (Python 3.9–3.13) |
-| PyPI | v2.0.0 — `pip install data-fitcheck` |
+| PyPI | v2.0.1 — `pip install data-fitcheck` |
 
 ## Limitations
 
@@ -128,7 +130,7 @@ pip-audit
 pytest --cov=fitcheck --cov-report=term-missing
 
 # Demo
-python demo.py
+fitcheck demo
 ```
 
 ## Versioning

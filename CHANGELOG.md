@@ -2,6 +2,24 @@
 
 All notable changes to FitCheck are documented here.
 
+## [2.0.1] - 2026-07-25
+
+### Fixed
+- `fitcheck demo` now works from any directory (moved `demo.py` into the package)
+- README badge claims now match reality (honest about mypy warnings)
+- 4 f-string lint errors in demo.py (ruff F541)
+- Console error on missing `sev` variable in HTML report generation
+
+### Added
+- CLI smoke tests (2 tests, bringing total to 30)
+- PyPI publishing: `pip install data-fitcheck`
+- "Try it now" prompt in README
+
+### Changed
+- Package renamed to `data-fitcheck` for PyPI (original `fitcheck` was taken)
+- README: honest about maturity, no false claims
+- README: install via `pip install data-fitcheck` instead of git+https
+
 ## [2.0.0] - 2026-07-23
 
 ### Added
