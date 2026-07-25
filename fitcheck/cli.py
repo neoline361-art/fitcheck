@@ -102,12 +102,12 @@ def _load_array(path: str) -> np.ndarray:
 
 def _run_demo() -> int:
     """Run the built-in demo."""
-    demo_path = Path(__file__).parent.parent / "demo.py"
+    demo_path = Path(__file__).parent / "demo.py"
     if demo_path.exists():
         import runpy
         runpy.run_path(str(demo_path), run_name="__main__")
         return 0
-    print("Demo script not found. Run: python demo.py")
+    print("Demo script not found.")
     return 1
 
 

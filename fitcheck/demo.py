@@ -40,8 +40,8 @@ print(f"    Saved: demo_data.csv ({len(df)} rows, {len(df.columns)} columns)")
 print("\n[1/3] Running dataset health check...")
 issues = fitcheck.check("demo_data.csv", target="label", output="demo_check_report.html", auto_fix=True)
 print(f"    Issues found: {len(issues)}")
-print(f"    Report: demo_check_report.html")
-print(f"    Fix script: demo_check_report_fix_script.py")
+print("    Report: demo_check_report.html")
+print("    Fix script: demo_check_report_fix_script.py")
 
 # 2. Model evaluation
 print("\n[2/3] Training model and evaluating...")
@@ -54,7 +54,7 @@ model.fit(X_train, y_train)
 metrics = fitcheck.report(model, X_test, y_test, output="demo_model_report.html")
 print(f"    Accuracy: {metrics['accuracy']:.4f}")
 print(f"    F1 Score: {metrics['f1']:.4f}")
-print(f"    Report: demo_model_report.html")
+print("    Report: demo_model_report.html")
 
 # 3. Drift detection
 print("\n[3/3] Detecting distribution drift...")
@@ -63,7 +63,7 @@ prod = pd.DataFrame({"feat_a": np.random.normal(0, 1, 300), "feat_b": np.random.
 results = fitcheck.detect_drift(ref, prod, output="demo_drift_report.html")
 drifted = sum(1 for r in results if r["drifted"])
 print(f"    Features tested: {len(results)}, Drifted: {drifted}")
-print(f"    Report: demo_drift_report.html")
+print("    Report: demo_drift_report.html")
 
 print("\n" + "=" * 60)
 print("Demo complete! Open the HTML reports in your browser.")
