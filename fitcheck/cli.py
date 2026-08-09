@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 import numpy as np
 
@@ -14,7 +13,7 @@ from fitcheck.drift import detect_drift
 from fitcheck.report import report
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
         prog="fitcheck",
@@ -32,7 +31,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # report command
     report_parser = subparsers.add_parser("report", help="Evaluate a trained model")
     report_parser.add_argument("model", help="Path to pickled model file")
-    report_parser.add_argument("X_test", help="Path to X_test (.npy or .csv)")
+    report_parser.add_argument("x_test", help="Path to x_test (.npy or .csv)")
     report_parser.add_argument("y_test", help="Path to y_test (.npy or .csv)")
     report_parser.add_argument("--output", "-o", default="model_report.html", help="Output HTML path")
 
@@ -65,9 +64,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         with open(args.model, "rb") as f:
             model = pickle.load(f)
-        X_test = _load_array(args.X_test)
+        x_test = _load_array(args.x_test)
         y_test = _load_array(args.y_test)
-        metrics = report(model, X_test, y_test, output=args.output)
+        metrics = report(model, x_test, y_test, output=args.output)
         print(f"Model report saved: {args.output}")
         print(f"Metrics: { {k: v for k, v in metrics.items() if k != 'feature_importance'} }")
         return 0
