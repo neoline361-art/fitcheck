@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import pandas as pd
 
@@ -13,12 +13,12 @@ from fitcheck.html import render_check_html
 
 
 def check(
-    data: Union[str, pd.DataFrame],
-    target: Optional[str] = None,
+    data: str | pd.DataFrame,
+    target: str | None = None,
     output: str = "fitcheck_report.html",
     return_format: str = "list",
     auto_fix: bool = False,
-) -> Union[List[Dict[str, Any]], Dict[str, Any], str]:
+) -> list[dict[str, Any]] | dict[str, Any] | str:
     """Run a comprehensive health check on a dataset.
 
     Args:
@@ -46,7 +46,7 @@ def check(
         "outlier_threshold": 0.01,
     }
 
-    issues: List[Dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
     issues.extend(_detect_missing(df, config))
     issues.extend(_detect_duplicates(df, config))
     issues.extend(_detect_constants(df))
@@ -86,7 +86,7 @@ def check(
         return issues
 
 
-def _load_data(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
+def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
     """Load data from path or return DataFrame as-is."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
@@ -97,7 +97,7 @@ def _load_data(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.read_csv(data)
 
 
-def _detect_missing(df: pd.DataFrame, config: Dict[str, float]) -> List[Dict[str, Any]]:
+def _detect_missing(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
     """Detect columns with missing values above thresholds."""
     issues = []
     for col in df.columns:
@@ -121,7 +121,7 @@ def _detect_missing(df: pd.DataFrame, config: Dict[str, float]) -> List[Dict[str
     return issues
 
 
-def _detect_duplicates(df: pd.DataFrame, config: Dict[str, float]) -> List[Dict[str, Any]]:
+def _detect_duplicates(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
     """Detect duplicate rows."""
     issues = []
     dup_count = df.duplicated().sum()
@@ -138,7 +138,7 @@ def _detect_duplicates(df: pd.DataFrame, config: Dict[str, float]) -> List[Dict[
     return issues
 
 
-def _detect_constants(df: pd.DataFrame) -> List[Dict[str, Any]]:
+def _detect_constants(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Detect columns with a single unique value."""
     issues = []
     for col in df.columns:
@@ -154,8 +154,8 @@ def _detect_constants(df: pd.DataFrame) -> List[Dict[str, Any]]:
 
 
 def _detect_imbalance(
-    df: pd.DataFrame, target: str, config: Dict[str, float]
-) -> List[Dict[str, Any]]:
+    df: pd.DataFrame, target: str, config: dict[str, float]
+) -> list[dict[str, Any]]:
     """Detect class imbalance in the target column."""
     issues = []
     vc = df[target].value_counts(normalize=True)
@@ -175,9 +175,9 @@ def _detect_imbalance(
 
 def _detect_outliers(
     df: pd.DataFrame,
-    config: Dict[str, float],
-    exclude: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    config: dict[str, float],
+    exclude: str | None = None,
+) -> list[dict[str, Any]]:
     """Detect outliers in numeric columns using the IQR method."""
     issues = []
     numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()

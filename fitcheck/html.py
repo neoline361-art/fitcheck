@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import base64
-import io
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -96,7 +94,7 @@ def _base_html(title: str, body_content: str) -> str:
 
 
 def render_check_html(
-    issues: List[Dict[str, Any]], df: pd.DataFrame, output: str
+    issues: list[dict[str, Any]], df: pd.DataFrame, output: str
 ) -> None:
     """Render dataset health check report to HTML."""
     critical = sum(1 for i in issues if i.get("severity") == "critical")
@@ -164,7 +162,7 @@ def render_check_html(
 
 
 def render_report_html(
-    metrics: Dict[str, Any], plots: Dict[str, str], task: str, output: str
+    metrics: dict[str, Any], plots: dict[str, str], task: str, output: str
 ) -> None:
     """Render model evaluation report to HTML."""
     body_parts = []
@@ -219,7 +217,7 @@ def render_report_html(
 
 
 def render_drift_html(
-    results: List[Dict[str, Any]],
+    results: list[dict[str, Any]],
     ref_df: pd.DataFrame,
     prod_df: pd.DataFrame,
     output: str,
@@ -258,7 +256,7 @@ def render_drift_html(
     body_parts.append('<h2>Per-Feature Results</h2>\n<div class="card">\n<table>\n')
     body_parts.append("<tr><th>Feature</th><th>Type</th><th>Test</th><th>Statistic</th><th>P-Value</th><th>Result</th></tr>\n")
     for r in results:
-        sev = r.get("severity", "info")
+        r.get("severity", "info")
         result_text = "DRIFT" if r.get("drifted") else "OK"
         result_class = "badge-critical" if r.get("drifted") else "badge-pass"
         body_parts.append(f"""
