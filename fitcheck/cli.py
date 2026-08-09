@@ -68,10 +68,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     elif args.command == "report":
-        import pickle
+        import pickle  # nosec B403 -- model file is user-supplied, not untrusted input
 
         with open(args.model, "rb") as f:
-            model = pickle.load(f)
+            model = pickle.load(f)  # nosec B301 -- loading the user's own model artifact
         x_test_arr = _load_array(args.X_test)
         y_test_arr = _load_array(args.y_test)
         metrics = report(model, x_test_arr, y_test_arr, output=args.output)
