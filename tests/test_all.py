@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +15,6 @@ from fitcheck.check import check
 from fitcheck.drift import detect_drift
 from fitcheck.fix import FixAction, FixScriptGenerator, generate_fix_script
 from fitcheck.report import report
-
 
 # ---------------------------------------------------------------------------
 # check.py tests
@@ -123,11 +120,11 @@ class TestReport:
     def test_classification_report(self, tmp_path: Path) -> None:
         """RandomForest classification produces correct metrics."""
         np.random.seed(42)
-        X = np.random.randn(100, 5)
-        y = (X[:, 0] > 0).astype(int)
+        x = np.random.randn(100, 5)
+        y = (x[:, 0] > 0).astype(int)
         model = RandomForestClassifier(n_estimators=10, random_state=42)
-        model.fit(X, y)
-        metrics = report(model, X, y, output=str(tmp_path / "report.html"))
+        model.fit(x, y)
+        metrics = report(model, x, y, output=str(tmp_path / "report.html"))
         assert "accuracy" in metrics
         assert "precision" in metrics
         assert "recall" in metrics
@@ -137,11 +134,11 @@ class TestReport:
     def test_regression_report(self, tmp_path: Path) -> None:
         """LinearRegression produces correct metrics."""
         np.random.seed(42)
-        X = np.random.randn(50, 3)
-        y = 3 * X[:, 0] + 2 * X[:, 1] + np.random.randn(50) * 0.1
+        x = np.random.randn(50, 3)
+        y = 3 * x[:, 0] + 2 * x[:, 1] + np.random.randn(50) * 0.1
         model = LinearRegression()
-        model.fit(X, y)
-        metrics = report(model, X, y, output=str(tmp_path / "report.html"))
+        model.fit(x, y)
+        metrics = report(model, x, y, output=str(tmp_path / "report.html"))
         assert "mse" in metrics
         assert "rmse" in metrics
         assert "mae" in metrics
@@ -150,12 +147,12 @@ class TestReport:
     def test_report_html_created(self, tmp_path: Path) -> None:
         """HTML report file is created."""
         np.random.seed(42)
-        X = np.random.randn(20, 3)
-        y = (X[:, 0] > 0).astype(int)
+        x = np.random.randn(20, 3)
+        y = (x[:, 0] > 0).astype(int)
         model = RandomForestClassifier(n_estimators=5, random_state=42)
-        model.fit(X, y)
+        model.fit(x, y)
         out = str(tmp_path / "model.html")
-        report(model, X, y, output=out)
+        report(model, x, y, output=out)
         assert Path(out).exists()
         content = Path(out).read_text()
         assert "FitCheck Model Report" in content
@@ -163,11 +160,11 @@ class TestReport:
     def test_report_feature_importance(self, tmp_path: Path) -> None:
         """Tree models include feature importance."""
         np.random.seed(42)
-        X = np.random.randn(30, 5)
-        y = (X[:, 0] > 0).astype(int)
+        x = np.random.randn(30, 5)
+        y = (x[:, 0] > 0).astype(int)
         model = RandomForestClassifier(n_estimators=5, random_state=42)
-        model.fit(X, y)
-        metrics = report(model, X, y, output=str(tmp_path / "report.html"))
+        model.fit(x, y)
+        metrics = report(model, x, y, output=str(tmp_path / "report.html"))
         assert "feature_importance" in metrics
 
 
@@ -239,8 +236,8 @@ class TestAutoFix:
         assert "OUTPUT_PATH" in script
         # Input and output should differ
         lines = script.split("\n")
-        input_line = [l for l in lines if "INPUT_PATH =" in l][0]
-        output_line = [l for l in lines if "OUTPUT_PATH =" in l][0]
+        input_line = [line for line in lines if "INPUT_PATH =" in line][0]
+        output_line = [line for line in lines if "OUTPUT_PATH =" in line][0]
         assert input_line != output_line
 
     def test_idempotent_output(self) -> None:
@@ -253,8 +250,8 @@ class TestAutoFix:
         script1 = generate_fix_script(diagnostics, "in.csv", "/tmp/t1.py")
         script2 = generate_fix_script(diagnostics, "in.csv", "/tmp/t2.py")
         # Strip timestamps for comparison
-        s1 = "\n".join(l for l in script1.split("\n") if "Generated:" not in l)
-        s2 = "\n".join(l for l in script2.split("\n") if "Generated:" not in l)
+        s1 = "\n".join(line for line in script1.split("\n") if "Generated:" not in line)
+        s2 = "\n".join(line for line in script2.split("\n") if "Generated:" not in line)
         assert s1 == s2
 
     def test_missing_values_action(self) -> None:
@@ -346,14 +343,14 @@ class TestIntegration:
 
     def test_version(self) -> None:
         """Version is accessible."""
-        assert fitcheck.__version__ == "2.0.0"
+        assert fitcheck.__version__ == "2.0.2"
         assert "check" in fitcheck.__all__
         assert "report" in fitcheck.__all__
         assert "detect_drift" in fitcheck.__all__
 
     def test_package_imports(self) -> None:
         """All public functions are importable."""
-        from fitcheck import check, report, detect_drift
+        from fitcheck import check, detect_drift, report
 
         assert callable(check)
         assert callable(report)
@@ -363,7 +360,6 @@ class TestIntegration:
         """CLI --help prints usage without errors."""
         # divorced-dad: argparse exits with SystemExit(0) on --help, catch it
         from fitcheck.cli import main
-        import sys
 
         try:
             main(["--help"])

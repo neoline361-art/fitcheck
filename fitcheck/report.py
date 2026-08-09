@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
+from numpy.typing import NDArray
 from sklearn import metrics as sk_metrics
 
 from fitcheck.html import render_report_html
@@ -20,8 +21,8 @@ from fitcheck.html import render_report_html
 
 def report(
     model: Any,
-    x_test: pd.DataFrame | np.ndarray,
-    y_test: pd.Series | np.ndarray,
+    x_test: pd.DataFrame | NDArray[Any],
+    y_test: pd.Series | NDArray[Any],
     output: str = "model_report.html",
 ) -> dict[str, Any]:
     """Evaluate a trained model and generate an HTML report.
@@ -53,7 +54,7 @@ def report(
     return metrics
 
 
-def _detect_task(y_test: np.ndarray) -> str:
+def _detect_task(y_test: NDArray[Any]) -> str:
     """Auto-detect if the task is classification or regression."""
     unique = np.unique(y_test)
     if len(unique) <= 2 or (y_test.dtype.kind in "iOb" and len(unique) <= 20):
@@ -61,15 +62,15 @@ def _detect_task(y_test: np.ndarray) -> str:
     return "regression"
 
 
-def _to_array(data: pd.DataFrame | pd.Series | np.ndarray) -> np.ndarray:
+def _to_array(data: pd.DataFrame | pd.Series | NDArray[Any]) -> NDArray[Any]:
     """Convert pandas or numpy input to numpy array."""
     if hasattr(data, "values"):
-        return data.values
+        return np.asarray(data.values)
     return np.asarray(data)
 
 
 def _classification_report(
-    model: Any, x_test: np.ndarray, y_test: np.ndarray
+    model: Any, x_test: NDArray[Any], y_test: NDArray[Any]
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Generate classification metrics and plots."""
     y_pred = model.predict(x_test)
@@ -127,7 +128,7 @@ def _classification_report(
 
 
 def _regression_report(
-    model: Any, x_test: np.ndarray, y_test: np.ndarray
+    model: Any, x_test: NDArray[Any], y_test: NDArray[Any]
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Generate regression metrics and plots."""
     y_pred = model.predict(x_test)
@@ -171,7 +172,7 @@ def _regression_report(
     return metrics, plots
 
 
-def _tree_importance(model: Any, x_test: np.ndarray) -> dict[str, float] | None:
+def _tree_importance(model: Any, x_test: NDArray[Any]) -> dict[str, float] | None:
     """Extract feature importances from tree-based models."""
     if not hasattr(model, "feature_importances_"):
         return None

@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 from fitcheck.check import check
 from fitcheck.drift import detect_drift
@@ -97,14 +99,14 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
 
-def _load_array(path: str) -> np.ndarray:
+def _load_array(path: str) -> NDArray[Any]:
     """Load numpy array from .npy or .csv file."""
     if path.endswith(".npy"):
-        return np.load(path)
+        return np.asarray(np.load(path))
     import pandas as pd
 
     df = pd.read_csv(path)
-    return df.values
+    return np.asarray(df.values)
 
 
 def _run_demo() -> int:

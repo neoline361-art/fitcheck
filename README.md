@@ -5,11 +5,11 @@
     <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
     <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white" alt="Python 3.9+"></a>
-    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-30%20passing-brightgreen" alt="Tests"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-36%20passing-brightgreen" alt="Tests"></a>
     <a href="https://pypi.org/project/data-fitcheck/"><img src="https://img.shields.io/pypi/v/data-fitcheck?color=blue" alt="PyPI"></a>
-    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Coverage-82%25-brightgreen" alt="Coverage"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Coverage-95%25-brightgreen" alt="Coverage"></a>
     <a href="https://github.com/neoline361-art/fitcheck/blob/main/SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue" alt="Security"></a>
-    <a href="https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-v2.0.1-blue" alt="Changelog"></a>
+    <a href="https://github.com/neoline361-art/fitcheck/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-v2.0.2-blue" alt="Changelog"></a>
   </p>
 </p>
 
@@ -98,14 +98,14 @@ fitcheck demo  # runs everything in one command
 
 | Aspect | Status |
 |--------|--------|
-| Version | v2.0.1 — Semantic Versioning |
-| Tests | 30 tests, 82% coverage |
-| Type Safety | mypy strict — 11 type-arg warnings (all ndarray, no runtime impact) |
+| Version | v2.0.2 — Semantic Versioning |
+| Tests | 36 tests, 95% coverage |
+| Type Safety | mypy strict — clean |
 | Linting | ruff clean |
 | Security | bandit + pip-audit (pickle warning expected for model loading) |
 | License | Apache 2.0 |
 | Platforms | Linux, macOS, Windows (Python 3.9–3.13) |
-| PyPI | v2.0.1 — `pip install data-fitcheck` |
+| PyPI | v2.0.2 — `pip install data-fitcheck` |
 
 ## Limitations
 

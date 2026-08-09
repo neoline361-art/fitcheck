@@ -2,6 +2,15 @@
 
 All notable changes to FitCheck are documented here.
 
+## [2.0.2] - 2026-08-09
+
+### Fixed
+- mypy strict is now fully clean: bare `np.ndarray` annotations replaced with `numpy.typing.NDArray` (11 type-arg / no-any-return errors)
+- ruff clean across `tests/` (removed unused imports, renamed ambiguous variables)
+
+### Added
+- CLI command tests (`tests/test_cli.py`): check, check --target/--auto-fix, report, drift, missing-file, no-command — total 36 tests, 95% coverage
+
 ## [2.0.1] - 2026-07-25
 
 ### Fixed
