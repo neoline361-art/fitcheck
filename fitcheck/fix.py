@@ -11,6 +11,7 @@ from typing import Any
 @dataclass(frozen=True)
 class FixAction:
     """Immutable fix action descriptor."""
+
     column: str
     issue_type: str
     severity: str
@@ -35,12 +36,12 @@ class FixScriptGenerator:
         lines: list[str] = []
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        lines.append("\"\"\"Auto-generated FitCheck Fix Script")
+        lines.append('"""Auto-generated FitCheck Fix Script')
         lines.append("")
         lines.append(f"Generated: {ts}")
         lines.append("WARNING: Review every step before running.")
         lines.append("This script reads from INPUT and writes to OUTPUT.")
-        lines.append("\"\"\"")
+        lines.append('"""')
         lines.append("")
         lines.append("import os")
         lines.append("import pandas as pd")
@@ -51,16 +52,16 @@ class FixScriptGenerator:
         lines.append("")
         lines.append("")
         lines.append("def load_data(path: str) -> pd.DataFrame:")
-        lines.append('    \"\"\"Load data, validating existence.\"\"\"')
+        lines.append('    """Load data, validating existence."""')
         lines.append("    if not os.path.exists(path):")
-        lines.append("        raise FileNotFoundError(f\"File not found: {path}\")")
+        lines.append('        raise FileNotFoundError(f"File not found: {path}")')
         lines.append("    if path.endswith('.parquet'):")
         lines.append("        return pd.read_parquet(path)")
         lines.append("    return pd.read_csv(path)")
         lines.append("")
         lines.append("")
         lines.append("def save_data(df: pd.DataFrame, path: str) -> None:")
-        lines.append('    \"\"\"Save cleaned data to a NEW file.\"\"\"')
+        lines.append('    """Save cleaned data to a NEW file."""')
         lines.append("    if os.path.exists(path):")
         lines.append("        print(f'WARNING: {path} already exists. Overwriting.')")
         lines.append("    if path.endswith('.parquet'):")
@@ -104,7 +105,9 @@ class FixScriptGenerator:
 
         return "\n".join(lines)
 
-    def save(self, input_path: str, script_path: str, output_path: str = "cleaned_data.csv") -> Path:
+    def save(
+        self, input_path: str, script_path: str, output_path: str = "cleaned_data.csv"
+    ) -> Path:
         """Generate and write the fix script to disk."""
         script = self.generate(input_path, output_path)
         path = Path(script_path)
@@ -123,14 +126,16 @@ def generate_fix_script(
             generator.add(action)
 
     if not generator.actions:
-        generator.add(FixAction(
-            column="none",
-            issue_type="no_action_needed",
-            severity="info",
-            description="No actionable issues detected",
-            code="pass  # No fixes required",
-            rationale="Dataset passed all checks",
-        ))
+        generator.add(
+            FixAction(
+                column="none",
+                issue_type="no_action_needed",
+                severity="info",
+                description="No actionable issues detected",
+                code="pass  # No fixes required",
+                rationale="Dataset passed all checks",
+            )
+        )
 
     generator.save(input_path, script_path)
     return generator.generate(input_path)

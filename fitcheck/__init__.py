@@ -12,6 +12,7 @@ __all__ = ["check", "report", "detect_drift", "__version__"]
 # Pro features (graceful fallback)
 try:
     from fitcheck.fix import generate_fix_script  # noqa: F401
+
     __all__.append("generate_fix_script")
 except ImportError:
     pass

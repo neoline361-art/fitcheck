@@ -24,13 +24,15 @@ print("=" * 60)
 print("\n[1/3] Creating synthetic dataset with issues...")
 np.random.seed(42)
 n = 500
-df = pd.DataFrame({
-    "age": np.concatenate([np.random.normal(35, 10, n-20), [np.nan]*20]),
-    "income": np.random.normal(50000, 15000, n),
-    "score": np.random.normal(700, 100, n),
-    "constant_col": [42] * n,  # constant column
-    "label": [0]*(n//4*3) + [1]*(n//4),  # 75/25 imbalance
-})
+df = pd.DataFrame(
+    {
+        "age": np.concatenate([np.random.normal(35, 10, n - 20), [np.nan] * 20]),
+        "income": np.random.normal(50000, 15000, n),
+        "score": np.random.normal(700, 100, n),
+        "constant_col": [42] * n,  # constant column
+        "label": [0] * (n // 4 * 3) + [1] * (n // 4),  # 75/25 imbalance
+    }
+)
 # Add duplicates
 df = pd.concat([df, df.head(10)], ignore_index=True)
 df.to_csv("demo_data.csv", index=False)
@@ -38,7 +40,9 @@ print(f"    Saved: demo_data.csv ({len(df)} rows, {len(df.columns)} columns)")
 
 # Run check
 print("\n[1/3] Running dataset health check...")
-issues = fitcheck.check("demo_data.csv", target="label", output="demo_check_report.html", auto_fix=True)
+issues = fitcheck.check(
+    "demo_data.csv", target="label", output="demo_check_report.html", auto_fix=True
+)
 print(f"    Issues found: {len(issues)}")
 print("    Report: demo_check_report.html")
 print("    Fix script: demo_check_report_fix_script.py")
@@ -59,7 +63,9 @@ print("    Report: demo_model_report.html")
 # 3. Drift detection
 print("\n[3/3] Detecting distribution drift...")
 ref = pd.DataFrame({"feat_a": np.random.normal(0, 1, 300), "feat_b": np.random.normal(5, 2, 300)})
-prod = pd.DataFrame({"feat_a": np.random.normal(0, 1, 300), "feat_b": np.random.normal(8, 2, 300)})  # shifted mean
+prod = pd.DataFrame(
+    {"feat_a": np.random.normal(0, 1, 300), "feat_b": np.random.normal(8, 2, 300)}
+)  # shifted mean
 results = fitcheck.detect_drift(ref, prod, output="demo_drift_report.html")
 drifted = sum(1 for r in results if r["drifted"])
 print(f"    Features tested: {len(results)}, Drifted: {drifted}")

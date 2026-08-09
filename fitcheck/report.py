@@ -76,9 +76,16 @@ def _classification_report(
 
     metrics: dict[str, Any] = {
         "accuracy": round(float(sk_metrics.accuracy_score(y_test, y_pred)), 4),
-        "precision": round(float(sk_metrics.precision_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
-        "recall": round(float(sk_metrics.recall_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
-        "f1": round(float(sk_metrics.f1_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
+        "precision": round(
+            float(sk_metrics.precision_score(y_test, y_pred, average="weighted", zero_division=0)),
+            4,
+        ),
+        "recall": round(
+            float(sk_metrics.recall_score(y_test, y_pred, average="weighted", zero_division=0)), 4
+        ),
+        "f1": round(
+            float(sk_metrics.f1_score(y_test, y_pred, average="weighted", zero_division=0)), 4
+        ),
     }
 
     plots: dict[str, str] = {}

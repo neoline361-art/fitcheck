@@ -62,9 +62,7 @@ def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
     return pd.read_csv(data)
 
 
-def _ks_test(
-    ref_col: pd.Series, prod_col: pd.Series, threshold: float
-) -> dict[str, Any]:
+def _ks_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
     """Kolmogorov-Smirnov test for numeric columns."""
     ref_vals = pd.to_numeric(ref_col, errors="coerce").dropna()
     prod_vals = pd.to_numeric(prod_col, errors="coerce").dropna()
@@ -91,15 +89,12 @@ def _ks_test(
         "drifted": drifted,
         "severity": severity,
         "message": (
-            f"KS stat={stat:.4f}, p={p:.4f} — "
-            f"{'drift detected' if drifted else 'no drift'}"
+            f"KS stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}"
         ),
     }
 
 
-def _chi2_test(
-    ref_col: pd.Series, prod_col: pd.Series, threshold: float
-) -> dict[str, Any]:
+def _chi2_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
     """Chi-squared test for categorical columns."""
     ref_counts = ref_col.value_counts()
     prod_counts = prod_col.value_counts()
@@ -146,7 +141,6 @@ def _chi2_test(
         "drifted": drifted,
         "severity": severity,
         "message": (
-            f"Chi2 stat={stat:.4f}, p={p:.4f} — "
-            f"{'drift detected' if drifted else 'no drift'}"
+            f"Chi2 stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}"
         ),
     }

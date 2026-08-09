@@ -73,6 +73,7 @@ def check(
     if auto_fix and issues:
         try:
             from fitcheck.fix import generate_fix_script
+
             script_path = str(Path(output).with_suffix("")) + "_fix_script.py"
             generate_fix_script(result_dict, input_path, script_path)
         except ImportError:
@@ -103,21 +104,25 @@ def _detect_missing(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str
     for col in df.columns:
         pct = df[col].isnull().mean()
         if pct >= config["missing_critical"]:
-            issues.append({
-                "column": col,
-                "type": "missing_values",
-                "severity": "critical",
-                "message": f"{col}: {pct:.1%} missing (critical threshold: {config['missing_critical']:.0%})",
-                "suggestion": f'Consider dropping column or advanced imputation for "{col}"',
-            })
+            issues.append(
+                {
+                    "column": col,
+                    "type": "missing_values",
+                    "severity": "critical",
+                    "message": f"{col}: {pct:.1%} missing (critical threshold: {config['missing_critical']:.0%})",
+                    "suggestion": f'Consider dropping column or advanced imputation for "{col}"',
+                }
+            )
         elif pct >= config["missing_warning"]:
-            issues.append({
-                "column": col,
-                "type": "missing_values",
-                "severity": "warning",
-                "message": f"{col}: {pct:.1%} missing (warning threshold: {config['missing_warning']:.0%})",
-                "suggestion": f'Apply median/mode imputation for "{col}"',
-            })
+            issues.append(
+                {
+                    "column": col,
+                    "type": "missing_values",
+                    "severity": "warning",
+                    "message": f"{col}: {pct:.1%} missing (warning threshold: {config['missing_warning']:.0%})",
+                    "suggestion": f'Apply median/mode imputation for "{col}"',
+                }
+            )
     return issues
 
 
@@ -128,13 +133,15 @@ def _detect_duplicates(df: pd.DataFrame, config: dict[str, float]) -> list[dict[
     if dup_count > 0:
         pct = dup_count / len(df)
         severity = "warning" if pct >= config["duplicate_threshold"] else "info"
-        issues.append({
-            "column": "all",
-            "type": "duplicate_rows",
-            "severity": severity,
-            "message": f"{dup_count} duplicate rows ({pct:.1%})",
-            "suggestion": "Consider removing duplicate rows with df.drop_duplicates()",
-        })
+        issues.append(
+            {
+                "column": "all",
+                "type": "duplicate_rows",
+                "severity": severity,
+                "message": f"{dup_count} duplicate rows ({pct:.1%})",
+                "suggestion": "Consider removing duplicate rows with df.drop_duplicates()",
+            }
+        )
     return issues
 
 
@@ -143,13 +150,15 @@ def _detect_constants(df: pd.DataFrame) -> list[dict[str, Any]]:
     issues = []
     for col in df.columns:
         if df[col].nunique(dropna=False) == 1:
-            issues.append({
-                "column": col,
-                "type": "constant_column",
-                "severity": "warning",
-                "message": f'{col}: constant value "{df[col].iloc[0]}" (zero variance)',
-                "suggestion": f'Drop constant column "{col}" — provides no information',
-            })
+            issues.append(
+                {
+                    "column": col,
+                    "type": "constant_column",
+                    "severity": "warning",
+                    "message": f'{col}: constant value "{df[col].iloc[0]}" (zero variance)',
+                    "suggestion": f'Drop constant column "{col}" — provides no information',
+                }
+            )
     return issues
 
 
@@ -160,16 +169,18 @@ def _detect_imbalance(
     issues = []
     vc = df[target].value_counts(normalize=True)
     if len(vc) > 1 and vc.iloc[0] >= config["imbalance_threshold"]:
-        issues.append({
-            "column": target,
-            "type": "class_imbalance",
-            "severity": "warning",
-            "message": (
-                f'{target}: class imbalance — majority class is '
-                f'"{vc.index[0]}" at {vc.iloc[0]:.1%}'
-            ),
-            "suggestion": "Consider SMOTE, class weights, or stratified sampling",
-        })
+        issues.append(
+            {
+                "column": target,
+                "type": "class_imbalance",
+                "severity": "warning",
+                "message": (
+                    f"{target}: class imbalance — majority class is "
+                    f'"{vc.index[0]}" at {vc.iloc[0]:.1%}'
+                ),
+                "suggestion": "Consider SMOTE, class weights, or stratified sampling",
+            }
+        )
     return issues
 
 
@@ -195,11 +206,13 @@ def _detect_outliers(
         outlier_count = ((col_data < lower) | (col_data > upper)).sum()
         pct = outlier_count / len(df)
         if pct >= config["outlier_threshold"]:
-            issues.append({
-                "column": col,
-                "type": "outliers",
-                "severity": "info",
-                "message": f"{col}: {outlier_count} outliers ({pct:.1%}) via IQR",
-                "suggestion": f'Review extreme values in "{col}" or apply capping',
-            })
+            issues.append(
+                {
+                    "column": col,
+                    "type": "outliers",
+                    "severity": "info",
+                    "message": f"{col}: {outlier_count} outliers ({pct:.1%}) via IQR",
+                    "suggestion": f'Review extreme values in "{col}" or apply capping',
+                }
+            )
     return issues

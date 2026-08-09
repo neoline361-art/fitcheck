@@ -23,6 +23,7 @@ from fitcheck.report import report
 # check.py tests
 # ---------------------------------------------------------------------------
 
+
 class TestCheck:
     """Tests for the dataset health check engine."""
 
@@ -76,7 +77,9 @@ class TestCheck:
         csv = tmp_path / "data.csv"
         pd.DataFrame({"a": [1, 2, None]}).to_csv(csv, index=False)
         result = check(str(csv), output=str(tmp_path / "report.html"), return_format="dict")
-        assert all(k in result for k in ("total_rows", "total_columns", "issues", "passed", "summary"))
+        assert all(
+            k in result for k in ("total_rows", "total_columns", "issues", "passed", "summary")
+        )
 
     def test_check_auto_fix_generates_script(self, tmp_path: Path) -> None:
         """auto_fix=True creates a fix script file."""
@@ -90,10 +93,12 @@ class TestCheck:
     def test_check_with_target(self, tmp_path: Path) -> None:
         """Target column triggers imbalance + outlier checks."""
         csv = tmp_path / "data.csv"
-        df = pd.DataFrame({
-            "feat": [1, 2, 3, 4, 5],
-            "label": [0, 0, 0, 0, 1]  # 80% imbalance
-        })
+        df = pd.DataFrame(
+            {
+                "feat": [1, 2, 3, 4, 5],
+                "label": [0, 0, 0, 0, 1],  # 80% imbalance
+            }
+        )
         df.to_csv(csv, index=False)
         result = check(str(csv), target="label", output=str(tmp_path / "report.html"))
         assert any(i.get("type") == "class_imbalance" for i in result)
@@ -110,6 +115,7 @@ class TestCheck:
 # ---------------------------------------------------------------------------
 # report.py tests
 # ---------------------------------------------------------------------------
+
 
 class TestReport:
     """Tests for the model evaluation engine."""
@@ -169,6 +175,7 @@ class TestReport:
 # drift.py tests
 # ---------------------------------------------------------------------------
 
+
 class TestDrift:
     """Tests for the drift detection engine."""
 
@@ -208,6 +215,7 @@ class TestDrift:
 # ---------------------------------------------------------------------------
 # fix.py tests — the killer feature
 # ---------------------------------------------------------------------------
+
 
 class TestAutoFix:
     """Tests for the transparent fix script generator."""
@@ -253,7 +261,12 @@ class TestAutoFix:
         """Missing values issue generates median imputation code."""
         diagnostics = {
             "issues": [
-                {"column": "age", "type": "missing_values", "severity": "warning", "message": "50% missing"}
+                {
+                    "column": "age",
+                    "type": "missing_values",
+                    "severity": "warning",
+                    "message": "50% missing",
+                }
             ]
         }
         script = generate_fix_script(diagnostics, "data.csv", "/tmp/test.py")
@@ -264,7 +277,12 @@ class TestAutoFix:
         """Duplicate rows issue generates drop_duplicates code."""
         diagnostics = {
             "issues": [
-                {"column": "all", "type": "duplicate_rows", "severity": "warning", "message": "5 dups"}
+                {
+                    "column": "all",
+                    "type": "duplicate_rows",
+                    "severity": "warning",
+                    "message": "5 dups",
+                }
             ]
         }
         script = generate_fix_script(diagnostics, "data.csv", "/tmp/test.py")
@@ -274,7 +292,12 @@ class TestAutoFix:
         """Constant column issue generates drop code."""
         diagnostics = {
             "issues": [
-                {"column": "useless", "type": "constant_column", "severity": "warning", "message": "all same"}
+                {
+                    "column": "useless",
+                    "type": "constant_column",
+                    "severity": "warning",
+                    "message": "all same",
+                }
             ]
         }
         script = generate_fix_script(diagnostics, "data.csv", "/tmp/test.py")
@@ -299,10 +322,16 @@ class TestAutoFix:
     def test_generator_save(self, tmp_path: Path) -> None:
         """FixScriptGenerator.save writes a file."""
         gen = FixScriptGenerator()
-        gen.add(FixAction(
-            column="a", issue_type="test", severity="info",
-            description="d", code="pass", rationale="r"
-        ))
+        gen.add(
+            FixAction(
+                column="a",
+                issue_type="test",
+                severity="info",
+                description="d",
+                code="pass",
+                rationale="r",
+            )
+        )
         path = gen.save("in.csv", str(tmp_path / "fix.py"), "out.csv")
         assert path.exists()
 
@@ -310,6 +339,7 @@ class TestAutoFix:
 # ---------------------------------------------------------------------------
 # Integration / sanity tests
 # ---------------------------------------------------------------------------
+
 
 class TestIntegration:
     """End-to-end integration tests."""
@@ -324,6 +354,7 @@ class TestIntegration:
     def test_package_imports(self) -> None:
         """All public functions are importable."""
         from fitcheck import check, report, detect_drift
+
         assert callable(check)
         assert callable(report)
         assert callable(detect_drift)
@@ -333,6 +364,7 @@ class TestIntegration:
         # divorced-dad: argparse exits with SystemExit(0) on --help, catch it
         from fitcheck.cli import main
         import sys
+
         try:
             main(["--help"])
         except SystemExit as e:
@@ -342,5 +374,6 @@ class TestIntegration:
         """CLI demo runs via main() without crashing."""
         # divorced-dad: smoke test CLI entry point, skip subprocess complexity
         from fitcheck.cli import main
+
         result = main(["demo"])
         assert result == 0

@@ -25,7 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     check_parser = subparsers.add_parser("check", help="Validate dataset quality")
     check_parser.add_argument("data", help="Path to CSV or Parquet file")
     check_parser.add_argument("--target", "-t", default=None, help="Target column name")
-    check_parser.add_argument("--output", "-o", default="fitcheck_report.html", help="Output HTML path")
+    check_parser.add_argument(
+        "--output", "-o", default="fitcheck_report.html", help="Output HTML path"
+    )
     check_parser.add_argument("--auto-fix", action="store_true", help="Generate fix script")
 
     # report command
@@ -33,13 +35,17 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument("model", help="Path to pickled model file")
     report_parser.add_argument("X_test", help="Path to X_test (.npy or .csv)")
     report_parser.add_argument("y_test", help="Path to y_test (.npy or .csv)")
-    report_parser.add_argument("--output", "-o", default="model_report.html", help="Output HTML path")
+    report_parser.add_argument(
+        "--output", "-o", default="model_report.html", help="Output HTML path"
+    )
 
     # drift command
     drift_parser = subparsers.add_parser("drift", help="Detect distribution drift")
     drift_parser.add_argument("reference", help="Reference dataset path")
     drift_parser.add_argument("production", help="Production dataset path")
-    drift_parser.add_argument("--output", "-o", default="drift_report.html", help="Output HTML path")
+    drift_parser.add_argument(
+        "--output", "-o", default="drift_report.html", help="Output HTML path"
+    )
     drift_parser.add_argument("--threshold", type=float, default=0.05, help="P-value threshold")
 
     # demo command
@@ -96,6 +102,7 @@ def _load_array(path: str) -> np.ndarray:
     if path.endswith(".npy"):
         return np.load(path)
     import pandas as pd
+
     df = pd.read_csv(path)
     return df.values
 
@@ -105,6 +112,7 @@ def _run_demo() -> int:
     demo_path = Path(__file__).parent / "demo.py"
     if demo_path.exists():
         import runpy
+
         runpy.run_path(str(demo_path), run_name="__main__")
         return 0
     print("Demo script not found.")
