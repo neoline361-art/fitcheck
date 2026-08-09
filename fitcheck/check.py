@@ -204,7 +204,7 @@ def _detect_outliers(
             continue
         lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
         outlier_count = ((col_data < lower) | (col_data > upper)).sum()
-        pct = outlier_count / len(df)
+        pct = outlier_count / len(col_data)
         if pct >= config["outlier_threshold"]:
             issues.append(
                 {

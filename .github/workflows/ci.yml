@@ -23,6 +23,7 @@ jobs:
         run: |
           pip install -e ".[dev]"
           pip install bandit pip-audit
+          pip install "setuptools>=83.0.0"  # PYSEC-2026-3447: fix vuln in bootstrapped 82.x
       - name: Lint with ruff
         run: ruff check fitcheck/
       - name: Type check with mypy

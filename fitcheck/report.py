@@ -46,7 +46,8 @@ def report(
     else:
         metrics, plots = _regression_report(model, x_test_arr, y_test_arr)
 
-    importance = _tree_importance(model, x_test_arr)
+    feature_names = list(x_test.columns) if isinstance(x_test, pd.DataFrame) else None
+    importance = _tree_importance(model, x_test_arr, feature_names)
     if importance:
         metrics["feature_importance"] = importance
 
@@ -172,12 +173,14 @@ def _regression_report(
     return metrics, plots
 
 
-def _tree_importance(model: Any, x_test: NDArray[Any]) -> dict[str, float] | None:
+def _tree_importance(
+    model: Any, x_test: NDArray[Any], feature_names: list[str] | None = None
+) -> dict[str, float] | None:
     """Extract feature importances from tree-based models."""
     if not hasattr(model, "feature_importances_"):
         return None
     importances = model.feature_importances_
-    names = [f"feature_{i}" for i in range(len(importances))]
+    names = feature_names or [f"feature_{i}" for i in range(len(importances))]
     top = sorted(zip(names, importances), key=lambda x: x[1], reverse=True)[:15]
     return {name: round(float(imp), 4) for name, imp in top}
 

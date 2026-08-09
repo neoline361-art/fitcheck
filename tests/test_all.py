@@ -108,6 +108,43 @@ class TestCheck:
         result = check(str(csv), output=str(tmp_path / "report.html"))
         assert any(i.get("type") == "duplicate_rows" for i in result)
 
+    def test_check_outlier_denominator_uses_non_null(self, tmp_path: Path) -> None:
+        """Outlier ratio is computed against non-null values, not total rows."""
+        # 1 outlier among 10 non-null values (10%) — must be flagged even though
+        # it is only 5% of total rows (1/20) due to NaNs.
+        csv = tmp_path / "outliers.csv"
+        df = pd.DataFrame(
+            {
+                "a": [
+                    0.0,
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0,
+                    5.0,
+                    6.0,
+                    7.0,
+                    8.0,
+                    1000.0,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ]
+            }
+        )
+        df.to_csv(csv, index=False)
+        result = check(str(csv), output=str(tmp_path / "report.html"))
+        outlier_issue = [i for i in result if i.get("type") == "outliers"]
+        assert outlier_issue, "outlier should be flagged based on non-null denominator"
+        assert "10.0%" in outlier_issue[0]["message"]
+
 
 # ---------------------------------------------------------------------------
 # report.py tests
@@ -166,6 +203,18 @@ class TestReport:
         model.fit(x, y)
         metrics = report(model, x, y, output=str(tmp_path / "report.html"))
         assert "feature_importance" in metrics
+
+    def test_report_feature_importance_uses_column_names(self, tmp_path: Path) -> None:
+        """Feature importance uses real DataFrame column names."""
+        np.random.seed(42)
+        x = pd.DataFrame(np.random.randn(30, 3), columns=["age", "income", "score"])
+        y = (x["age"] > 0).astype(int)
+        model = RandomForestClassifier(n_estimators=5, random_state=42)
+        model.fit(x, y)
+        metrics = report(model, x, y, output=str(tmp_path / "report.html"))
+        importance = metrics["feature_importance"]
+        assert set(importance.keys()) == {"age", "income", "score"}
+        assert all("feature_" not in k for k in importance)
 
 
 # ---------------------------------------------------------------------------
