@@ -18,6 +18,9 @@ def check(
     output: str = "fitcheck_report.html",
     return_format: str = "list",
     auto_fix: bool = False,
+    config: dict[str, float] | None = None,
+    plugins: list[Any] | None = None,
+    time_column: str | None = None,
 ) -> list[dict[str, Any]] | dict[str, Any] | str:
     """Run a comprehensive health check on a dataset.
 
@@ -27,6 +30,9 @@ def check(
         output: Path for the generated HTML report.
         return_format: One of "list", "dict", or "json".
         auto_fix: If True, generate a Python fix script alongside the report.
+        config: Optional threshold overrides; omitted values keep safe defaults.
+        plugins: Optional custom check functions returning issue dictionaries.
+        time_column: Optional timestamp column for basic time-series validation.
 
     Returns:
         Issues found in the dataset. Format depends on return_format.
@@ -38,13 +44,21 @@ def check(
     df = _load_data(data)
     input_path = data if isinstance(data, str) else "dataframe_input"
 
-    config = {
+    thresholds: dict[str, float] = {
         "missing_critical": 0.20,
         "missing_warning": 0.05,
         "duplicate_threshold": 0.05,
         "imbalance_threshold": 0.80,
         "outlier_threshold": 0.01,
     }
+    if config:
+        unknown = set(config) - set(thresholds)
+        if unknown:
+            raise ValueError(f"Unknown check threshold(s): {', '.join(sorted(unknown))}")
+        thresholds.update(config)
+    if thresholds["missing_critical"] < thresholds["missing_warning"]:
+        raise ValueError("missing_critical must be greater than or equal to missing_warning")
+    config = thresholds
 
     issues: list[dict[str, Any]] = []
     issues.extend(_detect_missing(df, config))
@@ -56,11 +70,21 @@ def check(
     else:
         issues.extend(_detect_outliers(df, config))
 
+    if plugins:
+        from fitcheck.extensions import run_plugins
+
+        issues.extend(run_plugins(df, plugins))
+    if time_column:
+        from fitcheck.extensions import validate_timeseries
+
+        issues.extend(validate_timeseries(df, time_column))
+
     result_dict = {
         "total_rows": len(df),
         "total_columns": len(df.columns),
         "issues": issues,
         "passed": len(issues) == 0,
+        "config": config,
         "summary": {
             "critical": sum(1 for i in issues if i.get("severity") == "critical"),
             "warning": sum(1 for i in issues if i.get("severity") == "warning"),

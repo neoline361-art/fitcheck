@@ -31,6 +31,9 @@ def main(argv: list[str] | None = None) -> int:
         "--output", "-o", default="fitcheck_report.html", help="Output HTML path"
     )
     check_parser.add_argument("--auto-fix", action="store_true", help="Generate fix script")
+    check_parser.add_argument("--missing-warning", type=float, default=0.05)
+    check_parser.add_argument("--missing-critical", type=float, default=0.20)
+    check_parser.add_argument("--outlier-threshold", type=float, default=0.01)
 
     # report command
     report_parser = subparsers.add_parser("report", help="Evaluate a trained model")
@@ -49,6 +52,16 @@ def main(argv: list[str] | None = None) -> int:
         "--output", "-o", default="drift_report.html", help="Output HTML path"
     )
     drift_parser.add_argument("--threshold", type=float, default=0.05, help="P-value threshold")
+    drift_parser.add_argument("--method", choices=["auto", "ks", "psi", "wasserstein", "chi2"], default="auto")
+
+    # full command
+    full_parser = subparsers.add_parser("full", help="Run dataset, model, and optional drift checks")
+    full_parser.add_argument("data", help="Dataset path")
+    full_parser.add_argument("--target", "-t", required=True, help="Target column name")
+    full_parser.add_argument("--model", required=True, help="Pickled trained model path")
+    full_parser.add_argument("--reference", help="Optional reference dataset path for drift")
+    full_parser.add_argument("--output-dir", default="fitcheck_reports", help="Report directory")
+    full_parser.add_argument("--auto-fix", action="store_true", help="Generate fix script")
 
     # demo command
     subparsers.add_parser("demo", help="Run a quick demo")
@@ -61,6 +74,11 @@ def main(argv: list[str] | None = None) -> int:
             target=args.target,
             output=args.output,
             auto_fix=args.auto_fix,
+            config={
+                "missing_warning": args.missing_warning,
+                "missing_critical": args.missing_critical,
+                "outlier_threshold": args.outlier_threshold,
+            },
         )
         print(f"Report saved: {args.output}")
         if result:
@@ -85,10 +103,29 @@ def main(argv: list[str] | None = None) -> int:
             production=args.production,
             output=args.output,
             threshold=args.threshold,
+            method=args.method,
         )
         drifted = sum(1 for r in results if r.get("drifted"))
         print(f"Drift report saved: {args.output}")
         print(f"Features tested: {len(results)}, Drifted: {drifted}")
+        return 0
+
+    elif args.command == "full":
+        import pickle  # nosec B403 -- model file is user-supplied
+        from pathlib import Path
+
+        import pandas as pd
+        out_dir = Path(args.output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        data = pd.read_csv(args.data) if not args.data.endswith(".parquet") else pd.read_parquet(args.data)
+        check(data, target=args.target, output=str(out_dir / "dataset_report.html"), auto_fix=args.auto_fix)
+        with open(args.model, "rb") as file:
+            model = pickle.load(file)  # nosec B301 -- user-owned model artifact
+        metrics = report(model, data.drop(columns=[args.target]), data[args.target], output=str(out_dir / "model_report.html"))
+        if args.reference:
+            detect_drift(args.reference, args.data, output=str(out_dir / "drift_report.html"))
+        print(f"Reports saved in: {out_dir}")
+        print(f"Model metrics: { {k: v for k, v in metrics.items() if k != 'feature_importance'} }")
         return 0
 
     elif args.command == "demo":

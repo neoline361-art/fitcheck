@@ -1,9 +1,7 @@
-"""Distribution drift detection — compare reference vs production datasets."""
-
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -11,39 +9,48 @@ from scipy import stats
 
 from fitcheck.html import render_drift_html
 
+DriftMethod = Literal["auto", "ks", "psi", "wasserstein", "chi2"]
+
 
 def detect_drift(
     reference: str | pd.DataFrame,
     production: str | pd.DataFrame,
     output: str = "drift_report.html",
     threshold: float = 0.05,
+    method: DriftMethod = "auto",
+    psi_threshold: float = 0.20,
+    wasserstein_threshold: float = 0.10,
 ) -> list[dict[str, Any]]:
     """Detect distribution drift between reference and production data.
 
-    Args:
-        reference: Path to reference dataset or DataFrame.
-        production: Path to production dataset or DataFrame.
-        output: Path for the generated HTML report.
-        threshold: P-value threshold for detecting drift (default 0.05).
-
-    Returns:
-        List of drift results per feature.
+    ``auto`` uses KS for small numeric samples, PSI for larger numeric samples,
+    and Chi-squared for categorical features. Wasserstein can be selected
+    explicitly; its normalized distance is divided by the reference standard
+    deviation so the threshold is scale-independent.
     """
+    if not 0 < threshold < 1:
+        raise ValueError("threshold must be between 0 and 1")
+    if method not in {"auto", "ks", "psi", "wasserstein", "chi2"}:
+        raise ValueError(f"Unsupported drift method: {method}")
+
     ref_df = _load_data(reference)
     prod_df = _load_data(production)
-
     common_cols = [c for c in ref_df.columns if c in prod_df.columns]
     results: list[dict[str, Any]] = []
 
     for col in common_cols:
         ref_col = ref_df[col].dropna()
         prod_col = prod_df[col].dropna()
-
-        if ref_col.dtype.kind in "iufc" and ref_col.nunique() > 10:
+        numeric = pd.api.types.is_numeric_dtype(ref_col) and pd.api.types.is_numeric_dtype(prod_col)
+        selected = _select_method(method, numeric, len(ref_col), len(prod_col))
+        if selected == "ks":
             result = _ks_test(ref_col, prod_col, threshold)
+        elif selected == "psi":
+            result = _psi_test(ref_col, prod_col, psi_threshold)
+        elif selected == "wasserstein":
+            result = _wasserstein_test(ref_col, prod_col, wasserstein_threshold)
         else:
             result = _chi2_test(ref_col, prod_col, threshold)
-
         result["feature"] = col
         results.append(result)
 
@@ -51,8 +58,15 @@ def detect_drift(
     return results
 
 
+def _select_method(method: DriftMethod, numeric: bool, ref_size: int, prod_size: int) -> str:
+    if method != "auto":
+        return "chi2" if method == "chi2" else method
+    if not numeric:
+        return "chi2"
+    return "ks" if min(ref_size, prod_size) < 1_000 else "psi"
+
+
 def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
-    """Load data from path or return DataFrame as-is."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
     if not os.path.exists(data):
@@ -62,85 +76,87 @@ def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
     return pd.read_csv(data)
 
 
+def _empty_result(kind: str, test: str, message: str) -> dict[str, Any]:
+    return {
+        "type": kind,
+        "test": test,
+        "statistic": 0.0,
+        "p_value": 1.0,
+        "drifted": False,
+        "severity": "info",
+        "message": message,
+    }
+
+
 def _ks_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
-    """Kolmogorov-Smirnov test for numeric columns."""
     ref_vals = pd.to_numeric(ref_col, errors="coerce").dropna()
     prod_vals = pd.to_numeric(prod_col, errors="coerce").dropna()
-
     if len(ref_vals) == 0 or len(prod_vals) == 0:
-        return {
-            "type": "numeric",
-            "test": "KS",
-            "statistic": 0.0,
-            "p_value": 1.0,
-            "drifted": False,
-            "severity": "info",
-            "message": "Insufficient numeric data for KS test",
-        }
-
+        return _empty_result("numeric", "KS", "Insufficient numeric data for KS test")
     stat, p = stats.ks_2samp(ref_vals, prod_vals)
-    drifted = p < threshold
-    severity = "critical" if drifted else "info"
+    drifted = bool(p < threshold)
     return {
-        "type": "numeric",
-        "test": "KS",
-        "statistic": round(float(stat), 4),
-        "p_value": round(float(p), 4),
-        "drifted": drifted,
-        "severity": severity,
-        "message": (
-            f"KS stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}"
-        ),
+        "type": "numeric", "test": "KS", "statistic": round(float(stat), 4),
+        "p_value": round(float(p), 4), "drifted": drifted,
+        "severity": "critical" if drifted else "info",
+        "message": f"KS stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}",
+    }
+
+
+def _psi_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
+    ref = pd.to_numeric(ref_col, errors="coerce").dropna().to_numpy(dtype=float)
+    prod = pd.to_numeric(prod_col, errors="coerce").dropna().to_numpy(dtype=float)
+    if len(ref) == 0 or len(prod) == 0 or np.ptp(ref) == 0:
+        return _empty_result("numeric", "PSI", "Insufficient variation for PSI")
+    edges = np.unique(np.quantile(ref, np.linspace(0, 1, 11)))
+    if len(edges) < 2:
+        return _empty_result("numeric", "PSI", "Insufficient variation for PSI")
+    ref_bins = np.histogram(ref, bins=edges)[0].astype(float)
+    prod_bins = np.histogram(np.clip(prod, edges[0], edges[-1]), bins=edges)[0].astype(float)
+    ref_pct = np.clip(ref_bins / len(ref), 1e-6, None)
+    prod_pct = np.clip(prod_bins / len(prod), 1e-6, None)
+    psi = float(np.sum((prod_pct - ref_pct) * np.log(prod_pct / ref_pct)))
+    drifted = psi >= threshold
+    return {
+        "type": "numeric", "test": "PSI", "statistic": round(psi, 4),
+        "p_value": None, "drifted": drifted,
+        "severity": "critical" if drifted else "info",
+        "message": f"PSI={psi:.4f} — {'drift detected' if drifted else 'no drift'}",
+    }
+
+
+def _wasserstein_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
+    ref = pd.to_numeric(ref_col, errors="coerce").dropna().to_numpy(dtype=float)
+    prod = pd.to_numeric(prod_col, errors="coerce").dropna().to_numpy(dtype=float)
+    if len(ref) == 0 or len(prod) == 0:
+        return _empty_result("numeric", "Wasserstein", "Insufficient numeric data")
+    scale = float(np.std(ref)) or 1.0
+    distance = float(stats.wasserstein_distance(ref, prod) / scale)
+    drifted = distance >= threshold
+    return {
+        "type": "numeric", "test": "Wasserstein", "statistic": round(distance, 4),
+        "p_value": None, "drifted": drifted,
+        "severity": "critical" if drifted else "info",
+        "message": f"Normalized distance={distance:.4f} — {'drift detected' if drifted else 'no drift'}",
     }
 
 
 def _chi2_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
-    """Chi-squared test for categorical columns."""
     ref_counts = ref_col.value_counts()
     prod_counts = prod_col.value_counts()
     all_cats = ref_counts.index.union(prod_counts.index)
-
     if len(all_cats) == 0:
-        return {
-            "type": "categorical",
-            "test": "Chi2",
-            "statistic": 0.0,
-            "p_value": 1.0,
-            "drifted": False,
-            "severity": "info",
-            "message": "No categories found for Chi2 test",
-        }
-
-    ref_vec = np.array([ref_counts.get(c, 0) for c in all_cats])
-    prod_vec = np.array([prod_counts.get(c, 0) for c in all_cats])
-
-    # Add pseudocount to avoid zero expected frequencies
-    ref_vec = ref_vec + 0.5
-    prod_vec = prod_vec + 0.5
-
+        return _empty_result("categorical", "Chi2", "No categories found for Chi2 test")
+    ref_vec = np.array([ref_counts.get(c, 0) for c in all_cats], dtype=float) + 0.5
+    prod_vec = np.array([prod_counts.get(c, 0) for c in all_cats], dtype=float) + 0.5
     try:
         stat, p, _, _ = stats.chi2_contingency([ref_vec, prod_vec])
     except ValueError:
-        return {
-            "type": "categorical",
-            "test": "Chi2",
-            "statistic": 0.0,
-            "p_value": 1.0,
-            "drifted": False,
-            "severity": "info",
-            "message": "Chi2 test could not be computed",
-        }
-
-    drifted = p < threshold
-    severity = "critical" if drifted else "info"
+        return _empty_result("categorical", "Chi2", "Chi2 test could not be computed")
+    drifted = bool(p < threshold)
     return {
-        "type": "categorical",
-        "test": "Chi2",
-        "statistic": round(float(stat), 4),
-        "p_value": round(float(p), 4),
-        "drifted": drifted,
-        "severity": severity,
-        "message": (
-            f"Chi2 stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}"
-        ),
+        "type": "categorical", "test": "Chi2", "statistic": round(float(stat), 4),
+        "p_value": round(float(p), 4), "drifted": drifted,
+        "severity": "critical" if drifted else "info",
+        "message": f"Chi2 stat={stat:.4f}, p={p:.4f} — {'drift detected' if drifted else 'no drift'}",
     }

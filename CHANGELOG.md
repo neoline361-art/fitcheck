@@ -2,6 +2,20 @@
 
 All notable changes to FitCheck are documented here.
 
+## [Unreleased]
+
+### Added
+- `fitcheck full` one-command dataset, model, and optional drift workflow.
+- PSI and normalized Wasserstein drift methods with automatic numeric-method selection.
+- Configurable dataset thresholds through the Python API and CLI.
+- Average precision, precision–recall curves, and recommended classification thresholds.
+- Responsive report layouts, recommendations, embedded diagnostics, and safer HTML escaping.
+- Regression tests for thresholds, drift methods, model diagnostics, and the full workflow.
+
+### Fixed
+- Pandas DataFrames are preserved during model prediction, eliminating avoidable scikit-learn feature-name warnings.
+- README and API documentation now match the current 42-test project state.
+
 ## [2.0.2] - 2026-08-09
 
 ### Fixed

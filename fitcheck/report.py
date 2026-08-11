@@ -1,5 +1,3 @@
-"""Model evaluation engine — auto-detects classification vs regression."""
-
 from __future__ import annotations
 
 import base64
@@ -25,38 +23,23 @@ def report(
     y_test: pd.Series | NDArray[Any],
     output: str = "model_report.html",
 ) -> dict[str, Any]:
-    """Evaluate a trained model and generate an HTML report.
-
-    Args:
-        model: Trained scikit-learn model with a predict method.
-        x_test: Test features.
-        y_test: Test targets.
-        output: Path for the generated HTML report.
-
-    Returns:
-        Dictionary containing all computed metrics.
-    """
-    x_test_arr = _to_array(x_test)
-    y_test_arr = _to_array(y_test)
-
-    task = _detect_task(y_test_arr)
-
+    """Evaluate a trained model and generate a self-contained HTML report."""
+    y_values = _to_array(y_test)
+    task = _detect_task(y_values)
+    prediction_x: Any = x_test  # preserve DataFrame feature names for sklearn pipelines
     if task == "classification":
-        metrics, plots = _classification_report(model, x_test_arr, y_test_arr)
+        metrics, plots = _classification_report(model, prediction_x, y_values)
     else:
-        metrics, plots = _regression_report(model, x_test_arr, y_test_arr)
-
+        metrics, plots = _regression_report(model, prediction_x, y_values)
     feature_names = list(x_test.columns) if isinstance(x_test, pd.DataFrame) else None
-    importance = _tree_importance(model, x_test_arr, feature_names)
+    importance = _tree_importance(model, _to_array(x_test), feature_names)
     if importance:
         metrics["feature_importance"] = importance
-
     render_report_html(metrics, plots, task, output)
     return metrics
 
 
 def _detect_task(y_test: NDArray[Any]) -> str:
-    """Auto-detect if the task is classification or regression."""
     unique = np.unique(y_test)
     if len(unique) <= 2 or (y_test.dtype.kind in "iOb" and len(unique) <= 20):
         return "classification"
@@ -64,56 +47,48 @@ def _detect_task(y_test: NDArray[Any]) -> str:
 
 
 def _to_array(data: pd.DataFrame | pd.Series | NDArray[Any]) -> NDArray[Any]:
-    """Convert pandas or numpy input to numpy array."""
-    if hasattr(data, "values"):
-        return np.asarray(data.values)
-    return np.asarray(data)
+    return np.asarray(data.values) if hasattr(data, "values") else np.asarray(data)
 
 
 def _classification_report(
-    model: Any, x_test: NDArray[Any], y_test: NDArray[Any]
+    model: Any, x_test: Any, y_test: NDArray[Any]
 ) -> tuple[dict[str, Any], dict[str, str]]:
-    """Generate classification metrics and plots."""
-    y_pred = model.predict(x_test)
-
+    y_pred = np.asarray(model.predict(x_test))
+    labels = np.unique(y_test)
     metrics: dict[str, Any] = {
         "accuracy": round(float(sk_metrics.accuracy_score(y_test, y_pred)), 4),
-        "precision": round(
-            float(sk_metrics.precision_score(y_test, y_pred, average="weighted", zero_division=0)),
-            4,
-        ),
-        "recall": round(
-            float(sk_metrics.recall_score(y_test, y_pred, average="weighted", zero_division=0)), 4
-        ),
-        "f1": round(
-            float(sk_metrics.f1_score(y_test, y_pred, average="weighted", zero_division=0)), 4
-        ),
+        "precision": round(float(sk_metrics.precision_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
+        "recall": round(float(sk_metrics.recall_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
+        "f1": round(float(sk_metrics.f1_score(y_test, y_pred, average="weighted", zero_division=0)), 4),
+        "support": int(len(y_test)),
     }
-
     plots: dict[str, str] = {}
-
-    # Confusion matrix heatmap
-    if len(np.unique(y_test)) <= 10:
-        cm = sk_metrics.confusion_matrix(y_test, y_pred)
+    if len(labels) <= 10:
+        cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=labels)
         fig, ax = plt.subplots(figsize=(6, 5))
-        ax.imshow(cm, cmap="Blues")
+        im = ax.imshow(cm, cmap="Blues")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         ax.set_title("Confusion Matrix")
+        ax.set_xticks(range(len(labels)), labels=labels)
+        ax.set_yticks(range(len(labels)), labels=labels)
         for i in range(cm.shape[0]):
             for j in range(cm.shape[1]):
-                ax.text(j, i, str(cm[i, j]), ha="center", va="center", color="black")
+                ax.text(j, i, str(cm[i, j]), ha="center", va="center")
         ax.set_ylabel("True")
         ax.set_xlabel("Predicted")
-        plt.tight_layout()
         plots["confusion_matrix"] = _fig_to_base64(fig)
         plt.close(fig)
-
-    # ROC curve (binary only)
-    if len(np.unique(y_test)) == 2 and hasattr(model, "predict_proba"):
-        y_prob = model.predict_proba(x_test)[:, 1]
-        fpr, tpr, _ = sk_metrics.roc_curve(y_test, y_prob)
-        roc_auc = sk_metrics.roc_auc_score(y_test, y_prob)
+    if len(labels) == 2 and hasattr(model, "predict_proba"):
+        probabilities = np.asarray(model.predict_proba(x_test))[:, 1]
+        positive = labels[1]
+        binary_y = (y_test == positive).astype(int)
+        fpr, tpr, _ = sk_metrics.roc_curve(binary_y, probabilities)
+        roc_auc = sk_metrics.roc_auc_score(binary_y, probabilities)
+        precision_curve, recall_curve, thresholds = sk_metrics.precision_recall_curve(binary_y, probabilities)
         metrics["roc_auc"] = round(float(roc_auc), 4)
-
+        metrics["average_precision"] = round(float(sk_metrics.average_precision_score(binary_y, probabilities)), 4)
+        best_idx = int(np.argmax(2 * precision_curve * recall_curve / np.maximum(precision_curve + recall_curve, 1e-12)))
+        metrics["recommended_threshold"] = round(float(thresholds[min(best_idx, len(thresholds) - 1)]) if len(thresholds) else 0.5, 4)
         fig, ax = plt.subplots(figsize=(6, 5))
         ax.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
         ax.plot([0, 1], [0, 1], "k--")
@@ -121,30 +96,28 @@ def _classification_report(
         ax.set_ylabel("True Positive Rate")
         ax.set_title("ROC Curve")
         ax.legend()
-        plt.tight_layout()
         plots["roc_curve"] = _fig_to_base64(fig)
         plt.close(fig)
-
+        fig, ax = plt.subplots(figsize=(6, 5))
+        ax.plot(recall_curve, precision_curve, label=f"AP = {metrics['average_precision']:.3f}")
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
+        ax.set_title("Precision–Recall Curve")
+        ax.legend()
+        plots["pr_curve"] = _fig_to_base64(fig)
+        plt.close(fig)
     return metrics, plots
 
 
-def _regression_report(
-    model: Any, x_test: NDArray[Any], y_test: NDArray[Any]
-) -> tuple[dict[str, Any], dict[str, str]]:
-    """Generate regression metrics and plots."""
-    y_pred = model.predict(x_test)
-
+def _regression_report(model: Any, x_test: Any, y_test: NDArray[Any]) -> tuple[dict[str, Any], dict[str, str]]:
+    y_pred = np.asarray(model.predict(x_test))
     mse = float(sk_metrics.mean_squared_error(y_test, y_pred))
     metrics: dict[str, Any] = {
-        "mse": round(mse, 4),
-        "rmse": round(np.sqrt(mse), 4),
+        "mse": round(mse, 4), "rmse": round(float(np.sqrt(mse)), 4),
         "mae": round(float(sk_metrics.mean_absolute_error(y_test, y_pred)), 4),
-        "r2": round(float(sk_metrics.r2_score(y_test, y_pred)), 4),
+        "r2": round(float(sk_metrics.r2_score(y_test, y_pred)), 4), "support": int(len(y_test)),
     }
-
     plots: dict[str, str] = {}
-
-    # Residuals plot
     residuals = y_test - y_pred
     fig, ax = plt.subplots(figsize=(6, 5))
     ax.scatter(y_pred, residuals, alpha=0.5, edgecolors="none")
@@ -152,31 +125,22 @@ def _regression_report(
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Residuals")
     ax.set_title("Residuals vs Predicted")
-    plt.tight_layout()
     plots["residuals"] = _fig_to_base64(fig)
     plt.close(fig)
-
-    # Actual vs Predicted
     fig, ax = plt.subplots(figsize=(6, 5))
     ax.scatter(y_test, y_pred, alpha=0.5, edgecolors="none")
-    min_val = min(y_test.min(), y_pred.min())
-    max_val = max(y_test.max(), y_pred.max())
+    min_val, max_val = min(y_test.min(), y_pred.min()), max(y_test.max(), y_pred.max())
     ax.plot([min_val, max_val], [min_val, max_val], "r--", label="Perfect")
     ax.set_xlabel("Actual")
     ax.set_ylabel("Predicted")
     ax.set_title("Actual vs Predicted")
     ax.legend()
-    plt.tight_layout()
     plots["actual_vs_predicted"] = _fig_to_base64(fig)
     plt.close(fig)
-
     return metrics, plots
 
 
-def _tree_importance(
-    model: Any, x_test: NDArray[Any], feature_names: list[str] | None = None
-) -> dict[str, float] | None:
-    """Extract feature importances from tree-based models."""
+def _tree_importance(model: Any, x_test: NDArray[Any], feature_names: list[str] | None = None) -> dict[str, float] | None:
     if not hasattr(model, "feature_importances_"):
         return None
     importances = model.feature_importances_
@@ -186,7 +150,6 @@ def _tree_importance(
 
 
 def _fig_to_base64(fig: Figure) -> str:
-    """Convert a matplotlib figure to a base64-encoded PNG string."""
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
     buf.seek(0)

@@ -2,12 +2,13 @@
 
 from fitcheck.check import check
 from fitcheck.drift import detect_drift
+from fitcheck.extensions import run_plugins, validate_timeseries
 from fitcheck.report import report
 
 __version__ = "2.0.2"
 __author__ = "neoline361-art"
 
-__all__ = ["check", "report", "detect_drift", "__version__"]
+__all__ = ["check", "report", "detect_drift", "run_plugins", "validate_timeseries", "__version__"]
 
 # Pro features (graceful fallback)
 try:

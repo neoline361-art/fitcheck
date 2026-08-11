@@ -1,297 +1,83 @@
-"""HTML report rendering — dark-mode templates for check, report, and drift."""
-
 from __future__ import annotations
 
+from html import escape
 from typing import Any
 
 import pandas as pd
 
-# Shared CSS for all reports
 _DARK_CSS = """
-:root {
-  --bg: #0d1117;
-  --fg: #c9d1d9;
-  --card: #161b22;
-  --border: #30363d;
-  --accent: #58a6ff;
-  --critical: #f85149;
-  --warning: #d29922;
-  --info: #58a6ff;
-  --pass: #3fb950;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
-  line-height: 1.6;
-}
-.container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
-h1, h2 { color: var(--fg); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.badge-critical { background: rgba(248,81,73,0.15); color: var(--critical); }
-.badge-warning { background: rgba(210,153,34,0.15); color: var(--warning); }
-.badge-info { background: rgba(88,166,255,0.15); color: var(--info); }
-.badge-pass { background: rgba(63,185,80,0.15); color: var(--pass); }
-.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-.metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
-.metric-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
-.metric-label { font-size: 0.8rem; color: #8b949e; margin-top: 4px; }
-.issue-list { list-style: none; padding: 0; }
-.issue-item {
-  background: var(--card);
-  border-left: 4px solid var(--border);
-  border-radius: 0 8px 8px 0;
-  padding: 14px 18px;
-  margin-bottom: 12px;
-}
-.issue-critical { border-left-color: var(--critical); }
-.issue-warning { border-left-color: var(--warning); }
-.issue-info { border-left-color: var(--info); }
-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-th { color: #8b949e; font-weight: 500; font-size: 0.8rem; text-transform: uppercase; }
-tr:hover { background: rgba(88,166,255,0.04); }
-.plot-img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin: 12px 0; }
-.footer { text-align: center; margin-top: 40px; color: #8b949e; font-size: 0.8rem; }
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+:root{--bg:#0b1020;--fg:#e6edf7;--muted:#91a0b8;--card:#121a2b;--card2:#182238;--border:#293754;--accent:#7dd3fc;--critical:#fb7185;--warning:#fbbf24;--info:#60a5fa;--pass:#4ade80}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b1020,#101a31);color:var(--fg);line-height:1.55}.container{max-width:1180px;margin:0 auto;padding:40px 22px}h1{font-size:2.35rem;letter-spacing:-.04em;margin:0 0 8px}h2{font-size:1.2rem;margin:30px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{margin-top:0}.subtitle{color:var(--muted);margin:0 0 24px}.card,.metric-card{background:rgba(18,26,43,.92);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.18)}.card{padding:20px;margin-bottom:20px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px}.metric-card{padding:16px;text-align:center}.metric-value{font-size:1.8rem;font-weight:750;color:var(--accent);word-break:break-word}.metric-label{font-size:.72rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em}.badge-critical{background:rgba(251,113,133,.14);color:var(--critical)}.badge-warning{background:rgba(251,191,36,.14);color:var(--warning)}.badge-info{background:rgba(96,165,250,.14);color:var(--info)}.badge-pass{background:rgba(74,222,128,.14);color:var(--pass)}.issue-list{list-style:none;padding:0}.issue-item{background:var(--card);border-left:4px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:12px}.issue-critical{border-left-color:var(--critical)}.issue-warning{border-left-color:var(--warning)}.issue-info{border-left-color:var(--info)}code{background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin-top:4px;display:block;overflow-x:auto}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}tr:hover{background:rgba(125,211,252,.05)}.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}.plot-img{max-width:100%;border-radius:9px;border:1px solid var(--border);margin-top:10px;background:#fff}.footer{text-align:center;margin-top:44px;color:var(--muted);font-size:.8rem}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.callout{border-left:4px solid var(--accent);padding:12px 16px;background:rgba(96,165,250,.08);border-radius:0 8px 8px 0}
 """
 
 
 def _base_html(title: str, body_content: str) -> str:
-    """Wrap body content in a complete HTML document with dark styling."""
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{title}</title>
-<style>{_DARK_CSS}</style>
-</head>
-<body>
-<div class="container">
-{body_content}
-</div>
-</body>
-</html>"""
+    return f'''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="FitCheck"><title>{escape(title)}</title><style>{_DARK_CSS}</style></head><body><main class="container">{body_content}</main></body></html>'''
+
+
+def _metric_card(label: str, value: Any, color: str | None = None) -> str:
+    style = f' style="color:var(--{color})"' if color else ""
+    return f'<div class="metric-card"><div class="metric-value"{style}>{escape(str(value))}</div><div class="metric-label">{escape(label)}</div></div>'
 
 
 def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: str) -> None:
-    """Render dataset health check report to HTML."""
-    critical = sum(1 for i in issues if i.get("severity") == "critical")
-    warning = sum(1 for i in issues if i.get("severity") == "warning")
-    info = sum(1 for i in issues if i.get("severity") == "info")
-    status = "PASS" if len(issues) == 0 else "ISSUES FOUND"
-    status_class = "badge-pass" if len(issues) == 0 else "badge-warning"
-
-    body_parts = []
-    body_parts.append(f"""
-<h1>FitCheck Dataset Report</h1>
-<div class="card">
-  <span class="badge {status_class}">{status}</span>
-  <div class="metric-grid" style="margin-top:16px">
-    <div class="metric-card">
-      <div class="metric-value">{len(df)}</div>
-      <div class="metric-label">Rows</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value">{len(df.columns)}</div>
-      <div class="metric-label">Columns</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" style="color:var(--critical)">{critical}</div>
-      <div class="metric-label">Critical</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" style="color:var(--warning)">{warning}</div>
-      <div class="metric-label">Warnings</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" style="color:var(--info)">{info}</div>
-      <div class="metric-label">Info</div>
-    </div>
-  </div>
-</div>
-""")
-
+    counts = {level: sum(1 for i in issues if i.get("severity") == level) for level in ("critical", "warning", "info")}
+    status = "PASS" if not issues else "ISSUES FOUND"
+    status_class = "badge-pass" if not issues else "badge-warning"
+    parts = [f'<h1>FitCheck Dataset Report</h1><p class="subtitle">A local, read-only health check with actionable next steps.</p><div class="card"><span class="badge {status_class}">{status}</span><div class="metric-grid" style="margin-top:16px">', _metric_card("Rows", len(df)), _metric_card("Columns", len(df.columns)), _metric_card("Critical", counts["critical"], "critical"), _metric_card("Warnings", counts["warning"], "warning"), _metric_card("Info", counts["info"], "info"), '</div></div>']
     if issues:
-        body_parts.append('<h2>Issues</h2><ul class="issue-list">\n')
+        parts.append('<h2>Issues and recommendations</h2><ul class="issue-list">')
         for issue in issues:
-            css_class = f"issue-{issue.get('severity', 'info')}"
-            body_parts.append(f"""
-<li class="issue-item {css_class}">
-  <strong>{issue.get("type", "").replace("_", " ").title()}</strong>
-  <span class="badge badge-{issue.get("severity", "info")}">{issue.get("severity", "info")}</span><br>
-  <code>{issue.get("column", "")}</code> — {issue.get("message", "")}<br>
-  <small>Suggestion: {issue.get("suggestion", "")}</small>
-</li>
-""")
-        body_parts.append("</ul>\n")
+            severity = str(issue.get("severity", "info"))
+            parts.append(f'<li class="issue-item issue-{escape(severity)}"><strong>{escape(str(issue.get("type", "")).replace("_", " ").title())}</strong> <span class="badge badge-{escape(severity)}">{escape(severity)}</span><br><code>{escape(str(issue.get("column", "")))}</code> — {escape(str(issue.get("message", "")))}<br><small>Recommendation: {escape(str(issue.get("suggestion", "")))}</small></li>')
+        parts.append("</ul>")
     else:
-        body_parts.append(
-            '<div class="card"><p>No issues detected. Dataset looks clean!</p></div>\n'
-        )
-
-    # Data preview
-    body_parts.append('<h2>Data Preview</h2>\n<div class="card">\n')
-    body_parts.append(df.head(10).to_html(index=False, classes="preview-table"))
-    body_parts.append("\n</div>\n")
-
-    body_parts.append(
-        '<div class="footer">Generated by <a href="https://github.com/neoline361-art/fitcheck">FitCheck v2.0</a></div>\n'
-    )
-
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(_base_html("FitCheck Dataset Report", "".join(body_parts)))
+        parts.append('<div class="callout"><strong>No issues detected.</strong> The dataset passed every configured check.</div>')
+    parts.extend(['<h2>Data preview</h2><div class="card">', df.head(10).to_html(index=False, classes="preview-table", escape=True), '</div><div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>'])
+    _write(output, _base_html("FitCheck Dataset Report", "".join(parts)))
 
 
-def render_report_html(
-    metrics: dict[str, Any], plots: dict[str, str], task: str, output: str
-) -> None:
-    """Render model evaluation report to HTML."""
-    body_parts = []
-    body_parts.append(f"""
-<h1>FitCheck Model Report</h1>
-<div class="card">
-  <span class="badge badge-info">{task.upper()}</span>
-</div>
-""")
-
-    # Metrics grid
-    body_parts.append('<h2>Metrics</h2><div class="metric-grid">\n')
+def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str) -> None:
+    parts = [f'<h1>FitCheck Model Report</h1><p class="subtitle">Evaluation diagnostics for a {escape(task)} task.</p><div class="card"><span class="badge badge-info">{escape(task.upper())}</span></div><h2>Metrics</h2><div class="metric-grid">']
     for key, value in metrics.items():
-        if key == "feature_importance":
-            continue
-        label = key.replace("_", " ").upper()
-        if isinstance(value, float):
-            display = f"{value:.4f}"
-        else:
-            display = str(value)
-        body_parts.append(f"""
-<div class="metric-card">
-  <div class="metric-value">{display}</div>
-  <div class="metric-label">{label}</div>
-</div>
-""")
-    body_parts.append("</div>\n")
-
-    # Plots
+        if key != "feature_importance":
+            display = f"{value:.4f}" if isinstance(value, float) else value
+            parts.append(_metric_card(key.replace("_", " "), display))
+    parts.append("</div>")
     if plots:
-        body_parts.append("<h2>Visualizations</h2>\n")
+        parts.append('<h2>Visualizations</h2><div class="plot-grid">')
         for name, b64 in plots.items():
             title = name.replace("_", " ").title()
-            body_parts.append(f"""
-<div class="card">
-  <h3>{title}</h3>
-  <img class="plot-img" src="data:image/png;base64,{b64}" alt="{title}">
-</div>
-""")
-
-    # Feature importance
+            parts.append(f'<div class="card"><h3>{escape(title)}</h3><img class="plot-img" src="data:image/png;base64,{b64}" alt="{escape(title)}"></div>')
+        parts.append("</div>")
     if "feature_importance" in metrics:
-        body_parts.append(
-            '<h2>Feature Importance (Top 15)</h2>\n<div class="card">\n<table>\n<tr><th>Feature</th><th>Importance</th></tr>\n'
-        )
+        parts.append('<h2>Feature importance</h2><div class="card"><table><tr><th>Feature</th><th>Importance</th></tr>')
         for feat, imp in list(metrics["feature_importance"].items())[:15]:
-            body_parts.append(f"<tr><td>{feat}</td><td>{imp:.4f}</td></tr>\n")
-        body_parts.append("</table>\n</div>\n")
-
-    body_parts.append(
-        '<div class="footer">Generated by <a href="https://github.com/neoline361-art/fitcheck">FitCheck v2.0</a></div>\n'
-    )
-
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(_base_html("FitCheck Model Report", "".join(body_parts)))
+            parts.append(f"<tr><td>{escape(str(feat))}</td><td>{float(imp):.4f}</td></tr>")
+        parts.append("</table></div>")
+    parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
+    _write(output, _base_html("FitCheck Model Report", "".join(parts)))
 
 
-def render_drift_html(
-    results: list[dict[str, Any]],
-    ref_df: pd.DataFrame,
-    prod_df: pd.DataFrame,
-    output: str,
-) -> None:
-    """Render drift detection report to HTML."""
+def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_df: pd.DataFrame, output: str) -> None:
     drifted = sum(1 for r in results if r.get("drifted"))
-    status = "DRIFT DETECTED" if drifted > 0 else "NO DRIFT"
-    status_class = "badge-critical" if drifted > 0 else "badge-pass"
+    status = "DRIFT DETECTED" if drifted else "NO DRIFT"
+    status_class = "badge-critical" if drifted else "badge-pass"
+    parts = [f'<h1>FitCheck Drift Report</h1><p class="subtitle">Reference-versus-production distribution comparison.</p><div class="card"><span class="badge {status_class}">{status}</span><div class="metric-grid" style="margin-top:16px">', _metric_card("Reference rows", len(ref_df)), _metric_card("Production rows", len(prod_df)), _metric_card("Features tested", len(results)), _metric_card("Drifted", drifted, "critical"), '</div></div><h2>Per-feature results</h2><div class="card"><table><tr><th>Feature</th><th>Type</th><th>Test</th><th>Statistic</th><th>P-value</th><th>Result</th></tr>']
+    for result in results:
+        drift = bool(result.get("drifted"))
+        parts.append(f'<tr><td>{escape(str(result.get("feature", "")))}</td><td>{escape(str(result.get("type", "")))}</td><td>{escape(str(result.get("test", "")))}</td><td>{escape(str(result.get("statistic", "")))}</td><td>{escape(str(result.get("p_value", "")))}</td><td><span class="badge {"badge-critical" if drift else "badge-pass"}">{"DRIFT" if drift else "OK"}</span></td></tr>')
+    parts.append("</table></div>")
+    if drifted:
+        parts.append('<h2>Details</h2><ul class="issue-list">')
+        for result in results:
+            if result.get("drifted"):
+                parts.append(f'<li class="issue-item issue-critical"><strong>{escape(str(result.get("feature", "")))}</strong> — {escape(str(result.get("message", "")))}</li>')
+        parts.append("</ul>")
+    parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
+    _write(output, _base_html("FitCheck Drift Report", "".join(parts)))
 
-    body_parts = []
-    body_parts.append(f"""
-<h1>FitCheck Drift Report</h1>
-<div class="card">
-  <span class="badge {status_class}">{status}</span>
-  <div class="metric-grid" style="margin-top:16px">
-    <div class="metric-card">
-      <div class="metric-value">{len(ref_df)}</div>
-      <div class="metric-label">Reference Rows</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value">{len(prod_df)}</div>
-      <div class="metric-label">Production Rows</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value">{len(results)}</div>
-      <div class="metric-label">Features Tested</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" style="color:var(--critical)">{drifted}</div>
-      <div class="metric-label">Drifted</div>
-    </div>
-  </div>
-</div>
-""")
 
-    body_parts.append('<h2>Per-Feature Results</h2>\n<div class="card">\n<table>\n')
-    body_parts.append(
-        "<tr><th>Feature</th><th>Type</th><th>Test</th><th>Statistic</th><th>P-Value</th><th>Result</th></tr>\n"
-    )
-    for r in results:
-        result_text = "DRIFT" if r.get("drifted") else "OK"
-        result_class = "badge-critical" if r.get("drifted") else "badge-pass"
-        body_parts.append(f"""
-<tr>
-  <td>{r.get("feature", "")}</td>
-  <td>{r.get("type", "")}</td>
-  <td>{r.get("test", "")}</td>
-  <td>{r.get("statistic", "")}</td>
-  <td>{r.get("p_value", "")}</td>
-  <td><span class="badge {result_class}">{result_text}</span></td>
-</tr>
-""")
-    body_parts.append("</table>\n</div>\n")
-
-    # Messages
-    if drifted > 0:
-        body_parts.append('<h2>Details</h2>\n<ul class="issue-list">\n')
-        for r in results:
-            if r.get("drifted"):
-                body_parts.append(f"""
-<li class="issue-item issue-critical">
-  <strong>{r.get("feature", "")}</strong> — {r.get("message", "")}
-</li>
-""")
-        body_parts.append("</ul>\n")
-
-    body_parts.append(
-        '<div class="footer">Generated by <a href="https://github.com/neoline361-art/fitcheck">FitCheck v2.0</a></div>\n'
-    )
-
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(_base_html("FitCheck Drift Report", "".join(body_parts)))
+def _write(output: str, content: str) -> None:
+    with open(output, "w", encoding="utf-8") as file:
+        file.write(content)
