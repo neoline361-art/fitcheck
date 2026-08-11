@@ -4,6 +4,9 @@ All notable changes to FitCheck are documented here.
 
 ## [Unreleased]
 
+### Changed
+- Dropped Python 3.9 support (EOL; vulnerable transitive dependencies have no patched 3.9 releases). Minimum is now Python 3.10.
+
 ### Added
 - `fitcheck full` one-command dataset, model, and optional drift workflow.
 - PSI and normalized Wasserstein drift methods with automatic numeric-method selection.

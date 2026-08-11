@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false  # Keep all versions running so one failure doesn't cancel others
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,8 +23,7 @@ jobs:
         run: |
           pip install -e ".[dev]"
           pip install bandit pip-audit
-      - name: Upgrade setuptools (3.10+ only — no fixed release for py3.9)
-        if: matrix.python-version != '3.9'
+      - name: Upgrade setuptools
         run: pip install "setuptools>=83.0.0"  # PYSEC-2026-3447
       - name: Lint with ruff
         run: ruff check fitcheck/
@@ -33,7 +32,7 @@ jobs:
       - name: Security scan with bandit
         run: bandit -r fitcheck/ -x tests
       - name: Audit dependencies
-        run: pip-audit --ignore-vuln PYSEC-2026-3447  # unfixable on py3.9 (setuptools 83+ requires py3.10)
+        run: pip-audit
       - name: Test with pytest
         run: pytest --cov=fitcheck --cov-report=term-missing
       - name: Coverage badge
