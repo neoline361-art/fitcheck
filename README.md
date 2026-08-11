@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-42%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-44%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 FitCheck is a local-first toolkit for answering three questions quickly: **Is this dataset healthy? Is this model behaving? Has production data changed?** Every workflow produces a self-contained HTML report that can be opened locally and shared in a pull request, Slack, or an incident review.
@@ -116,7 +116,7 @@ bandit -r fitcheck/ -x tests
 pytest --cov=fitcheck --cov-report=term-missing
 ```
 
-The current repository suite contains **43 passing tests** and reports approximately **95% total coverage** on the supported Python environment.
+The current repository suite contains **44 passing tests** and reports approximately **95% total coverage** on the supported Python environment.
 
 ## Large CSVs and contact data
 
