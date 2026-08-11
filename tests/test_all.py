@@ -407,7 +407,6 @@ class TestIntegration:
 
     def test_cli_help(self) -> None:
         """CLI --help prints usage without errors."""
-        # divorced-dad: argparse exits with SystemExit(0) on --help, catch it
         from fitcheck.cli import main
 
         try:
@@ -417,7 +416,6 @@ class TestIntegration:
 
     def test_cli_demo(self) -> None:
         """CLI demo runs via main() without crashing."""
-        # divorced-dad: smoke test CLI entry point, skip subprocess complexity
         from fitcheck.cli import main
 
         result = main(["demo"])

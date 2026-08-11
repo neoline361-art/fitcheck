@@ -23,16 +23,8 @@ FitCheck is intentionally opinionated. It is zero-config for the common path, ne
 
 ## Installation
 
-The repository is currently the canonical install source. Use this command today:
-
 ```bash
-python -m pip install "git+https://github.com/neoline361-art/fitcheck.git"
-```
-
-If the package is published to PyPI in the future, the shorter form will be:
-
-```bash
-python -m pip install data-fitcheck
+pip install data-fitcheck
 ```
 
 For development:
@@ -40,7 +32,7 @@ For development:
 ```bash
 git clone https://github.com/neoline361-art/fitcheck.git
 cd fitcheck
-python -m pip install -e ".[dev]"
+pip install -e ".[dev]"
 ```
 
 ## The one-command workflow
