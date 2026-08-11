@@ -1,6 +1,6 @@
 # FitCheck API Reference
 
-## `fitcheck.check(data, target=None, output="fitcheck_report.html", return_format="list", auto_fix=False, config=None)`
+## `fitcheck.check(data, target=None, output="fitcheck_report.html", return_format="list", auto_fix=False, config=None, plugins=None, time_column=None, sample_rows=None)`
 
 Validate dataset health without mutating the input.
 
@@ -12,8 +12,11 @@ Validate dataset health without mutating the input.
 | `return_format` | `str` | `list` | `list`, `dict`, or `json` |
 | `auto_fix` | `bool` | `False` | Generate a transparent Python fix script when issues exist |
 | `config` | `dict[str, float]` or `None` | `None` | Overrides for `missing_warning`, `missing_critical`, `duplicate_threshold`, `imbalance_threshold`, and `outlier_threshold` |
+| `plugins` | `list[Callable]` or `None` | `None` | Optional custom checks that return issue dictionaries |
+| `time_column` | `str` or `None` | `None` | Optional timestamp column for ordering, parsing, and duplicate checks |
+| `sample_rows` | `int` or `None` | `None` | For CSV input, inspect only the first N rows and mark the result as sampled |
 
-The default checks cover missing values, duplicate rows, constant columns, class imbalance, and numeric IQR outliers. The returned dictionary includes row/column counts, issue summaries, and the active configuration.
+The default checks cover missing values, duplicate rows, constant columns, class imbalance, and numeric IQR outliers. Optional plugins and time-series checks are explicit additions. `sample_rows` is a memory-aware review, not a full-dataset audit; the returned dictionary records that distinction.
 
 ```python
 result = fitcheck.check(

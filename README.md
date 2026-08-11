@@ -108,7 +108,19 @@ bandit -r fitcheck/ -x tests
 pytest --cov=fitcheck --cov-report=term-missing
 ```
 
-The current repository suite contains **42 passing tests** and reports approximately **95% total coverage** on the supported Python environment.
+The current repository suite contains **43 passing tests** and reports approximately **95% total coverage** on the supported Python environment.
+
+## Large CSVs and contact data
+
+Phone numbers should be stored as strings, not numeric values, so leading zeros and country prefixes are preserved. Names are treated as text values. A quick local check is:
+
+```bash
+fitcheck check contacts.csv --output contacts_report.html
+# Fast, explicit sample review for a very large CSV:
+fitcheck check contacts.csv --sample-rows 100000 --output contacts_sample_report.html
+```
+
+FitCheck is designed for in-memory pandas workflows. A file with 1 million rows and a few narrow columns is a reasonable local smoke-test target, but a 10-million-row file may require several gigabytes of RAM depending on string length and pandas version. For a fast schema/sample review, use pandas to create a representative sample before calling FitCheck; do not claim a sample report is a full-dataset audit. FitCheck does not print or transmit raw phone numbers in the terminal, but generated reports can contain previews, so protect report files as sensitive data.
 
 ## Documentation
 

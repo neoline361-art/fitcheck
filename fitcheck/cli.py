@@ -34,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--missing-warning", type=float, default=0.05)
     check_parser.add_argument("--missing-critical", type=float, default=0.20)
     check_parser.add_argument("--outlier-threshold", type=float, default=0.01)
+    check_parser.add_argument("--sample-rows", type=int, default=None, help="Inspect only the first N CSV rows")
 
     # report command
     report_parser = subparsers.add_parser("report", help="Evaluate a trained model")
@@ -79,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
                 "missing_critical": args.missing_critical,
                 "outlier_threshold": args.outlier_threshold,
             },
+            sample_rows=args.sample_rows,
         )
         print(f"Report saved: {args.output}")
         if result:

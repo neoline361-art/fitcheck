@@ -70,3 +70,12 @@ def test_timeseries_and_plugin_extensions(tmp_path: Path) -> None:
     assert any(issue["type"] == "custom" for issue in result["issues"])
     assert any(issue["type"] == "invalid_timestamps" for issue in result["issues"])
     assert any(issue["type"] == "non_monotonic_time" for issue in result["issues"])
+
+
+def test_check_can_sample_large_csv(tmp_path: Path) -> None:
+    path = tmp_path / "contacts.csv"
+    pd.DataFrame({"mobile": ["+12025550101"] * 20, "name": ["Person"] * 20}).to_csv(path, index=False)
+    result = check(path.as_posix(), output=str(tmp_path / "sample.html"), return_format="dict", sample_rows=5)
+    assert result["sampled"] is True
+    assert result["sample_rows"] == 5
+    assert result["total_rows"] == 5

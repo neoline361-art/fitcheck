@@ -21,6 +21,7 @@ def check(
     config: dict[str, float] | None = None,
     plugins: list[Any] | None = None,
     time_column: str | None = None,
+    sample_rows: int | None = None,
 ) -> list[dict[str, Any]] | dict[str, Any] | str:
     """Run a comprehensive health check on a dataset.
 
@@ -33,6 +34,7 @@ def check(
         config: Optional threshold overrides; omitted values keep safe defaults.
         plugins: Optional custom check functions returning issue dictionaries.
         time_column: Optional timestamp column for basic time-series validation.
+        sample_rows: Optional number of CSV rows to inspect instead of loading the full file.
 
     Returns:
         Issues found in the dataset. Format depends on return_format.
@@ -41,7 +43,9 @@ def check(
         FileNotFoundError: If data is a string path that does not exist.
         ValueError: If return_format is not recognized.
     """
-    df = _load_data(data)
+    if sample_rows is not None and sample_rows <= 0:
+        raise ValueError("sample_rows must be a positive integer")
+    df = _load_data(data, sample_rows=sample_rows)
     input_path = data if isinstance(data, str) else "dataframe_input"
 
     thresholds: dict[str, float] = {
@@ -82,6 +86,8 @@ def check(
     result_dict = {
         "total_rows": len(df),
         "total_columns": len(df.columns),
+        "sampled": sample_rows is not None and isinstance(data, str),
+        "sample_rows": sample_rows if isinstance(data, str) else None,
         "issues": issues,
         "passed": len(issues) == 0,
         "config": config,
@@ -111,7 +117,7 @@ def check(
         return issues
 
 
-def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
+def _load_data(data: str | pd.DataFrame, sample_rows: int | None = None) -> pd.DataFrame:
     """Load data from path or return DataFrame as-is."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
@@ -119,7 +125,7 @@ def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
         raise FileNotFoundError(f"Data file not found: {data}")
     if data.endswith(".parquet"):
         return pd.read_parquet(data)
-    return pd.read_csv(data)
+    return pd.read_csv(data, nrows=sample_rows)
 
 
 def _detect_missing(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
