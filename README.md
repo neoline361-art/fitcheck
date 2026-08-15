@@ -76,12 +76,14 @@ fitcheck.check(
 
 | Area | Built-in diagnostics |
 |---|---|
-| Dataset health | Missing values, duplicates, constants, class imbalance, IQR outliers, high cardinality, text-length skew |
+| Dataset health | Missing values, duplicates, constants, class imbalance, IQR outliers, high cardinality, text-length skew, text-encoding warnings |
 | Time series | Timestamp parsing, monotonicity, duplicates, and frequency gaps (`--time-column`) |
 | Model classification | Accuracy, precision, recall, F1, confusion matrix, ROC/AUC, average precision, precision–recall curve, recommended threshold, Brier score, calibration curve, per-class error analysis, and tree feature importance |
 | Model regression | MSE, RMSE, MAE, R², adjusted R², explained variance, residual analysis, actual-versus-predicted plot, and tree feature importance |
 | Drift | Automatic KS/PSI selection for numeric data, explicit Wasserstein and Jensen–Shannon distance, Chi-squared categorical comparisons, and schema drift (missing columns / dtype changes) |
-| Reports | Severity badges, recommendations, responsive tables, embedded plots, and no external assets |
+| Seasonality | Autocorrelation-based hint for repeatable time-series patterns (`detect_seasonality`) |
+| Reports | Severity badges, recommendations, responsive tables, embedded plots, and no external assets. Optional interactive Plotly charts (`--renderer plotly`) |
+| Integrations | Optional MLflow logging and DVC metrics callbacks (`log_to_mlflow`, `log_to_dvc`) |
 
 For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger numeric samples. Use `method="wasserstein"` when a normalized distribution-distance signal is more useful than a hypothesis test.
 
@@ -92,10 +94,11 @@ fitcheck check data.csv --target label
 fitcheck check data1.csv data2.csv            # multi-file check
 fitcheck check data.csv --missing-warning 0.10 --missing-critical 0.30
 fitcheck check data.csv --time-column timestamp --plugins my_checks
-fitcheck report model.joblib X_test.npy y_test.npy
+fitcheck check big.parquet --backend polars        # optional fast loading backend
+fitcheck report model.joblib X_test.npy y_test.npy --renderer plotly
 fitcheck drift train.csv production.csv --method psi
 fitcheck full data.csv --target label --model model.joblib --reference train.csv
-fitcheck demo
+fitcheck demo --no-browser --output-dir ./demo
 ```
 
 ## CI and exit codes
@@ -158,7 +161,7 @@ bandit -r fitcheck/ -x tests
 pytest --cov=fitcheck --cov-report=term-missing
 ```
 
-The current repository suite contains **44 passing tests** and reports approximately **95% total coverage** on the supported Python environment.
+The current repository suite contains **70+ passing tests** and reports approximately **95% total coverage** on the supported Python environment.
 
 ## Large CSVs and contact data
 

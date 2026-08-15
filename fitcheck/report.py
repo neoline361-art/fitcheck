@@ -23,20 +23,26 @@ def report(
     x_test: pd.DataFrame | NDArray[Any],
     y_test: pd.Series | NDArray[Any],
     output: str = "model_report.html",
+    renderer: str = "static",
 ) -> dict[str, Any]:
-    """Evaluate a trained model and generate a self-contained HTML report."""
+    """Evaluate a trained model and generate a self-contained HTML report.
+
+    Args:
+        renderer: "static" (matplotlib, default) or "plotly" (interactive;
+            requires the optional plotly package).
+    """
     y_values = _to_array(y_test)
     task = _detect_task(y_values)
     prediction_x: Any = x_test  # preserve DataFrame feature names for sklearn pipelines
     if task == "classification":
-        metrics, plots = _classification_report(model, prediction_x, y_values)
+        metrics, plots = _classification_report(model, prediction_x, y_values, renderer)
     else:
-        metrics, plots = _regression_report(model, prediction_x, y_values)
+        metrics, plots = _regression_report(model, prediction_x, y_values, renderer)
     feature_names = list(x_test.columns) if isinstance(x_test, pd.DataFrame) else None
     importance = _tree_importance(model, _to_array(x_test), feature_names)
     if importance:
         metrics["feature_importance"] = importance
-    render_report_html(metrics, plots, task, output)
+    render_report_html(metrics, plots, task, output, renderer=renderer)
     return metrics
 
 
@@ -52,7 +58,7 @@ def _to_array(data: pd.DataFrame | pd.Series | NDArray[Any]) -> NDArray[Any]:
 
 
 def _classification_report(
-    model: Any, x_test: Any, y_test: NDArray[Any]
+    model: Any, x_test: Any, y_test: NDArray[Any], renderer: str = "static"
 ) -> tuple[dict[str, Any], dict[str, str]]:
     y_pred = np.asarray(model.predict(x_test))
     labels = np.unique(y_test)
@@ -66,19 +72,24 @@ def _classification_report(
     plots: dict[str, str] = {}
     if len(labels) <= 10:
         cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=labels)
-        fig, ax = plt.subplots(figsize=(6, 5))
-        im = ax.imshow(cm, cmap="Blues")
-        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        ax.set_title("Confusion Matrix")
-        ax.set_xticks(range(len(labels)), labels=labels)
-        ax.set_yticks(range(len(labels)), labels=labels)
-        for i in range(cm.shape[0]):
-            for j in range(cm.shape[1]):
-                ax.text(j, i, str(cm[i, j]), ha="center", va="center")
-        ax.set_ylabel("True")
-        ax.set_xlabel("Predicted")
-        plots["confusion_matrix"] = _fig_to_base64(fig)
-        plt.close(fig)
+        if renderer == "plotly":
+            from fitcheck.viz import get_renderer
+
+            plots["confusion_matrix"] = get_renderer("plotly").render_confusion_matrix(cm, [str(label) for label in labels])
+        else:
+            fig, ax = plt.subplots(figsize=(6, 5))
+            im = ax.imshow(cm, cmap="Blues")
+            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            ax.set_title("Confusion Matrix")
+            ax.set_xticks(range(len(labels)), labels=labels)
+            ax.set_yticks(range(len(labels)), labels=labels)
+            for i in range(cm.shape[0]):
+                for j in range(cm.shape[1]):
+                    ax.text(j, i, str(cm[i, j]), ha="center", va="center")
+            ax.set_ylabel("True")
+            ax.set_xlabel("Predicted")
+            plots["confusion_matrix"] = _fig_to_base64(fig)
+            plt.close(fig)
     if len(labels) == 2 and hasattr(model, "predict_proba"):
         probabilities = np.asarray(model.predict_proba(x_test))[:, 1]
         positive = labels[1]
@@ -91,15 +102,20 @@ def _classification_report(
         metrics["brier"] = round(float(sk_metrics.brier_score_loss(binary_y, probabilities)), 4)
         best_idx = int(np.argmax(2 * precision_curve * recall_curve / np.maximum(precision_curve + recall_curve, 1e-12)))
         metrics["recommended_threshold"] = round(float(thresholds[min(best_idx, len(thresholds) - 1)]) if len(thresholds) else 0.5, 4)
-        fig, ax = plt.subplots(figsize=(6, 5))
-        ax.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
-        ax.plot([0, 1], [0, 1], "k--")
-        ax.set_xlabel("False Positive Rate")
-        ax.set_ylabel("True Positive Rate")
-        ax.set_title("ROC Curve")
-        ax.legend()
-        plots["roc_curve"] = _fig_to_base64(fig)
-        plt.close(fig)
+        if renderer == "plotly":
+            from fitcheck.viz import get_renderer
+
+            plots["roc_curve"] = get_renderer("plotly").render_roc_curve(fpr, tpr, roc_auc)
+        else:
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
+            ax.plot([0, 1], [0, 1], "k--")
+            ax.set_xlabel("False Positive Rate")
+            ax.set_ylabel("True Positive Rate")
+            ax.set_title("ROC Curve")
+            ax.legend()
+            plots["roc_curve"] = _fig_to_base64(fig)
+            plt.close(fig)
         fig, ax = plt.subplots(figsize=(6, 5))
         ax.plot(recall_curve, precision_curve, label=f"AP = {metrics['average_precision']:.3f}")
         ax.set_xlabel("Recall")
@@ -136,7 +152,9 @@ def _per_class_errors(y_test: NDArray[Any], y_pred: NDArray[Any], labels: NDArra
     return errors
 
 
-def _regression_report(model: Any, x_test: Any, y_test: NDArray[Any]) -> tuple[dict[str, Any], dict[str, str]]:
+def _regression_report(
+    model: Any, x_test: Any, y_test: NDArray[Any], renderer: str = "static"
+) -> tuple[dict[str, Any], dict[str, str]]:
     y_pred = np.asarray(model.predict(x_test))
     mse = float(sk_metrics.mean_squared_error(y_test, y_pred))
     r2 = float(sk_metrics.r2_score(y_test, y_pred))
@@ -184,12 +202,33 @@ def _feature_count(x_test: Any) -> int:
 
 
 def _tree_importance(model: Any, x_test: NDArray[Any], feature_names: list[str] | None = None) -> dict[str, float] | None:
-    if not hasattr(model, "feature_importances_"):
+    """Feature importance from tree attributes, with a SHAP fallback for any model."""
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+        names = feature_names or [f"feature_{i}" for i in range(len(importances))]
+        top = sorted(zip(names, importances), key=lambda x: x[1], reverse=True)[:15]
+        return {name: round(float(imp), 4) for name, imp in top}
+    return _shap_importance(model, x_test, feature_names)
+
+
+def _shap_importance(model: Any, x_test: NDArray[Any], feature_names: list[str] | None) -> dict[str, float] | None:
+    """Mean absolute SHAP values for models without tree attributes (optional dep)."""
+    try:
+        import shap
+    except ImportError:
         return None
-    importances = model.feature_importances_
-    names = feature_names or [f"feature_{i}" for i in range(len(importances))]
-    top = sorted(zip(names, importances), key=lambda x: x[1], reverse=True)[:15]
-    return {name: round(float(imp), 4) for name, imp in top}
+    try:
+        sample = x_test[: min(200, len(x_test))]
+        explainer = shap.Explainer(model, sample)
+        values = np.asarray(explainer(sample).values)
+        if values.ndim > 2:
+            values = values.mean(axis=0)  # multiclass: average across classes
+        importances = np.abs(values).mean(axis=0)
+        names = feature_names or [f"feature_{i}" for i in range(len(importances))]
+        top = sorted(zip(names, importances), key=lambda x: x[1], reverse=True)[:15]
+        return {name: round(float(imp), 4) for name, imp in top}
+    except Exception:
+        return None  # pragma: no cover - shap can fail on unusual model types
 
 
 def _fig_to_base64(fig: Figure) -> str:

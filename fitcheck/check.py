@@ -22,6 +22,7 @@ def check(
     plugins: list[Any] | None = None,
     time_column: str | None = None,
     sample_rows: int | None = None,
+    backend: str = "pandas",
 ) -> list[dict[str, Any]] | dict[str, Any] | str:
     """Run a comprehensive health check on a dataset.
 
@@ -35,6 +36,7 @@ def check(
         plugins: Optional custom check functions returning issue dictionaries.
         time_column: Optional timestamp column for basic time-series validation.
         sample_rows: Optional number of CSV rows to inspect instead of loading the full file.
+        backend: Data loading backend: "pandas" (default) or "polars" (optional dependency).
 
     Returns:
         Issues found in the dataset. Format depends on return_format.
@@ -45,7 +47,7 @@ def check(
     """
     if sample_rows is not None and sample_rows <= 0:
         raise ValueError("sample_rows must be a positive integer")
-    df = _load_data(data, sample_rows=sample_rows)
+    df = _load_data(data, sample_rows=sample_rows, backend=backend)
     input_path = data if isinstance(data, str) else "dataframe_input"
 
     thresholds: dict[str, float] = {
@@ -72,6 +74,7 @@ def check(
     issues.extend(_detect_constants(df))
     issues.extend(_detect_high_cardinality(df, config))
     issues.extend(_detect_text_length(df, config))
+    issues.extend(_detect_text_encoding(df))
     if target and target in df.columns:
         issues.extend(_detect_imbalance(df, target, config))
         issues.extend(_detect_outliers(df, config, exclude=target))
@@ -121,12 +124,22 @@ def check(
         return issues
 
 
-def _load_data(data: str | pd.DataFrame, sample_rows: int | None = None) -> pd.DataFrame:
+def _load_data(
+    data: str | pd.DataFrame,
+    sample_rows: int | None = None,
+    backend: str = "pandas",
+) -> pd.DataFrame:
     """Load data from path or return DataFrame as-is."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
     if not os.path.exists(data):
         raise FileNotFoundError(f"Data file not found: {data}")
+    if backend == "polars":
+        from fitcheck.backends import get_backend
+
+        frame = get_backend("polars").read(data)
+        df = frame.to_pandas()
+        return df.head(sample_rows) if sample_rows is not None else df
     if data.endswith(".parquet"):
         return pd.read_parquet(data)
     return pd.read_csv(data, nrows=sample_rows)
@@ -261,7 +274,7 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
         # Continuous floats are expected to be ~unique; only ID-like dtypes are meaningful.
         if not (
             pd.api.types.is_object_dtype(dtype)
-            or pd.api.types.is_categorical_dtype(dtype)
+            or isinstance(dtype, pd.CategoricalDtype)
             or pd.api.types.is_integer_dtype(dtype)
         ):
             continue
@@ -279,6 +292,32 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
                     "suggestion": f'Verify "{col}" is not an ID column; group or hash high-cardinality values',
                 }
             )
+    return issues
+
+
+def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Flag object columns with values that are not strictly UTF-8 encodable.
+
+    Mixed encodings usually surface as lone surrogates after a lossy decode;
+    a strict re-encode raises UnicodeEncodeError on those values.
+    """
+    issues = []
+    for col in df.select_dtypes(include=["object"]).columns:
+        sample = df[col].dropna().head(100)
+        for value in sample:
+            try:
+                str(value).encode("utf-8", errors="strict")
+            except UnicodeEncodeError:
+                issues.append(
+                    {
+                        "column": col,
+                        "type": "text_encoding",
+                        "severity": "warning",
+                        "message": f'{col}: contains non-UTF8 encodable characters (possible mixed encoding)',
+                        "suggestion": f'Re-decode "{col}" with the correct source encoding before further analysis',
+                    }
+                )
+                break
     return issues
 
 

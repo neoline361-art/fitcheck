@@ -4,7 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 2.0.x   | ✅ |
+| 2.1.x   | ✅ |
+| 2.0.x   | ✅ (security fixes only) |
 | < 2.0   | ❌ |
 
 ## No Telemetry, No Network Access

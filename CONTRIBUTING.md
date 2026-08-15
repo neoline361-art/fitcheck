@@ -18,7 +18,7 @@ pre-commit install
 
 1. **Tests**: `pytest --cov=fitcheck` — all must pass
 2. **Lint**: `ruff check fitcheck/` — clean
-3. **Types**: `mypy fitcheck/` — strict (11 type-arg warnings expected, no runtime impact)
+3. **Types**: `mypy fitcheck/` — strict, fully clean
 
 ## Code Style
 
@@ -43,7 +43,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `sec
 1. Update CHANGELOG.md
 2. Update tests for any new functionality
 3. Update relevant documentation
-4. Ensure CI passes
+4. Run the full gate: `ruff check fitcheck tests`, `mypy fitcheck`, `bandit -r fitcheck/ -x tests`, `pip-audit`, `pytest -W error::DeprecationWarning -W error::FutureWarning`
+5. Ensure CI passes
 
 ## PR Title Convention
 

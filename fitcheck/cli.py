@@ -46,6 +46,12 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--outlier-threshold", type=float, default=0.01)
     check_parser.add_argument("--sample-rows", type=int, default=None, help="Inspect only the first N CSV rows")
     check_parser.add_argument("--time-column", default=None, help="Timestamp column for time-series checks")
+    check_parser.add_argument(
+        "--backend",
+        choices=["pandas", "polars"],
+        default="pandas",
+        help="Data loading backend (polars is faster for large files; optional dependency)",
+    )
     check_parser.add_argument("--plugins", default=None, help="Comma-separated plugin names or dotted module paths")
     check_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON to stdout")
     check_parser.add_argument("--quiet", action="store_true", help="Suppress all non-JSON output")
@@ -63,6 +69,12 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument("y_test", help="Path to y_test (.npy or .csv)")
     report_parser.add_argument(
         "--output", "-o", default="model_report.html", help="Output HTML path"
+    )
+    report_parser.add_argument(
+        "--renderer",
+        choices=["plotly", "static"],
+        default="static",
+        help="Chart renderer (plotly is interactive; requires the optional plotly package)",
     )
 
     # drift command
@@ -90,7 +102,9 @@ def main(argv: list[str] | None = None) -> int:
     full_parser.add_argument("--quiet", action="store_true", help="Suppress progress output")
 
     # demo command
-    subparsers.add_parser("demo", help="Run a quick demo")
+    demo_parser = subparsers.add_parser("demo", help="Run a quick demo")
+    demo_parser.add_argument("--no-browser", action="store_true", help="Skip opening the browser")
+    demo_parser.add_argument("--output-dir", default=None, help="Directory for generated reports")
 
     args = parser.parse_args(argv)
 
@@ -104,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "full":
             return _run_full(args)
         if args.command == "demo":
-            return _run_demo()
+            return _run_demo(args)
     except (FileNotFoundError, ValueError, KeyError, NameError) as exc:
         print(f"fitcheck: error: {exc}", file=sys.stderr)
         return 3
@@ -143,6 +157,7 @@ def _run_check(args: Any) -> int:
             plugins=plugins,
             time_column=args.time_column,
             sample_rows=args.sample_rows,
+            backend=args.backend,
         )
         if args.json:
             result_dict = cast(dict[str, Any], result)
@@ -169,7 +184,7 @@ def _run_report(args: Any) -> int:
         model = pickle.load(f)  # nosec B301 -- loading the user's own model artifact
     x_test_arr = _load_array(args.X_test)
     y_test_arr = _load_array(args.y_test)
-    metrics = report(model, x_test_arr, y_test_arr, output=args.output)
+    metrics = report(model, x_test_arr, y_test_arr, output=args.output, renderer=args.renderer)
     print(f"Model report saved: {args.output}")
     print(f"Metrics: { {k: v for k, v in metrics.items() if k not in ('feature_importance', 'per_class_errors')} }")
     return 0
@@ -269,16 +284,12 @@ def _load_array(path: str) -> NDArray[Any]:
     return np.asarray(df.values)
 
 
-def _run_demo() -> int:
-    """Run the built-in demo."""
-    demo_path = Path(__file__).parent / "demo.py"
-    if demo_path.exists():
-        import runpy
+def _run_demo(args: Any) -> int:
+    """Run the built-in demo with optional headless/output-dir control."""
+    from fitcheck.demo import run_demo
 
-        runpy.run_path(str(demo_path), run_name="__main__")
-        return 0
-    print("Demo script not found.")
-    return 1
+    run_demo(no_browser=args.no_browser, output_dir=args.output_dir)
+    return 0
 
 
 if __name__ == "__main__":

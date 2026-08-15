@@ -1,0 +1,28 @@
+# FitCheck GitHub Action template.
+#
+# Copy this file into your own repository as
+#   .github/workflows/fitcheck-data-gate.yml
+# and adjust the data path, target, and fail-on level. The gate runs on every
+# pull request and blocks merges when dataset health issues are critical.
+#
+# This is a TEMPLATE — the example file is not executed by this repository's CI.
+
+name: Data Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  fitcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install FitCheck
+        run: pip install data-fitcheck
+      - name: Validate dataset
+        run: fitcheck check data/train.csv --target churn --fail-on critical --quiet

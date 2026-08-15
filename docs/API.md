@@ -27,7 +27,35 @@ result = fitcheck.check(
 )
 ```
 
-## `fitcheck.report(model, X_test, y_test, output="model_report.html")`
+## `fitcheck.check(...)` — extra parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `backend` | `str` | `pandas` | `pandas` (default) or `polars` (optional dependency; faster loading of large CSV/Parquet files). |
+
+The polars backend accelerates the load step and converts frames to pandas for the check engine; polars-native checks are a future optimisation.
+
+## `fitcheck.detect_seasonality(series, period=None)`
+
+Return an info-level issue dict when a numeric series shows repeatable seasonal autocorrelation at a candidate lag (`7`, `12`, `24`, or `30`, or an explicit `period`). Returns `None` when the series is too short or no pattern is found. Autocorrelation is a lightweight stand-in for STL decomposition, which is the documented upgrade path.
+
+```python
+issue = fitcheck.detect_seasonality(df["sales"], period=7)
+```
+
+## `fitcheck.get_backend(name=None, df=None)`
+
+Return `PandasBackend` or `PolarsBackend` (auto-selected when `df` is already a polars frame).
+
+## `fitcheck.get_renderer(name="static")`
+
+Return the static (matplotlib) or plotly renderer. The plotly renderer requires `pip install data-fitcheck[plotly]`.
+
+## `fitcheck.log_to_mlflow(result, run_id=None)` / `fitcheck.log_to_dvc(result, stage="validate", path="fitcheck_metrics.yaml")`
+
+Optional callbacks that log a check result dict to the active MLflow run or write DVC-compatible YAML metrics. Both no-op (returning `False`) when their optional dependency is missing.
+
+## `fitcheck.report(model, X_test, y_test, output="model_report.html", renderer="static")`
 
 Evaluate a trained model and write an HTML report. A pandas DataFrame is passed through to the model so feature-name-aware scikit-learn estimators do not emit avoidable warnings.
 
@@ -38,7 +66,7 @@ Evaluate a trained model and write an HTML report. A pandas DataFrame is passed 
 | `y_test` | `pd.Series` or `np.ndarray` | required | Test targets |
 | `output` | `str` | `model_report.html` | HTML report path |
 
-Classification reports include accuracy, weighted precision/recall/F1, support, confusion matrix, and, for binary probabilistic models, ROC-AUC, average precision, Brier score, ROC, precision–recall and calibration curves, a recommended threshold, and per-class error rates. Regression reports include MSE, RMSE, MAE, R², adjusted R², explained variance, residuals, and actual-versus-predicted plots. Tree feature importance is included when exposed by the model.
+Classification reports include accuracy, weighted precision/recall/F1, support, confusion matrix, and, for binary probabilistic models, ROC-AUC, average precision, Brier score, ROC, precision–recall and calibration curves, a recommended threshold, and per-class error rates. Regression reports include MSE, RMSE, MAE, R², adjusted R², explained variance, residuals, and actual-versus-predicted plots. Feature importance uses tree attributes when present and falls back to SHAP values when `pip install data-fitcheck[shap]` is installed. With `renderer="plotly"` (requires the optional plotly extra), confusion-matrix and ROC charts render as interactive charts instead of static images.
 
 ```python
 metrics = fitcheck.report(model, X_test, y_test)
@@ -67,9 +95,13 @@ results = fitcheck.detect_drift("train.csv", "prod.csv", method="auto")
 drifted = sum(result["drifted"] for result in results)
 ```
 
-## CLI full workflow
+## CLI examples
 
 ```bash
+fitcheck check data.csv --target label
+fitcheck check big.parquet --backend polars          # optional fast loading
+fitcheck report model.joblib X.npy y.npy --renderer plotly
+fitcheck demo --no-browser --output-dir ./demo
 fitcheck full data.csv --target label --model model.joblib --reference train.csv --output-dir reports
 ```
 

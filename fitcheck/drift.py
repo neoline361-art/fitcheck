@@ -218,8 +218,11 @@ def _chi2_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dic
     all_cats = ref_counts.index.union(prod_counts.index)
     if len(all_cats) == 0:
         return _empty_result("categorical", "Chi2", "No categories found for Chi2 test")
-    ref_vec = np.array([ref_counts.get(c, 0) for c in all_cats], dtype=float) + 0.5
-    prod_vec = np.array([prod_counts.get(c, 0) for c in all_cats], dtype=float) + 0.5
+    # Plain dicts avoid Series.get() positional-fallback semantics (pandas FutureWarning).
+    ref_map = dict(zip(ref_counts.index, ref_counts))
+    prod_map = dict(zip(prod_counts.index, prod_counts))
+    ref_vec = np.array([ref_map.get(c, 0) for c in all_cats], dtype=float) + 0.5
+    prod_vec = np.array([prod_map.get(c, 0) for c in all_cats], dtype=float) + 0.5
     try:
         stat, p, _, _ = stats.chi2_contingency([ref_vec, prod_vec])
     except ValueError:

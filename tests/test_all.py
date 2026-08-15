@@ -420,10 +420,10 @@ class TestIntegration:
             assert e.code == 0
 
     def test_cli_demo(self) -> None:
-        """CLI demo runs via main() without crashing."""
+        """CLI demo runs via main() without crashing (headless)."""
         from fitcheck.cli import main
 
-        result = main(["demo"])
+        result = main(["demo", "--no-browser"])
         assert result == 0
 
     def test_main_module_runs(self, monkeypatch, capsys) -> None:

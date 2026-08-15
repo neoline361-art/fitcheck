@@ -11,8 +11,16 @@ _DARK_CSS = """
 """
 
 
-def _base_html(title: str, body_content: str) -> str:
-    return f'''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="FitCheck"><title>{escape(title)}</title><style>{_DARK_CSS}</style></head><body><main class="container">{body_content}</main></body></html>'''
+def _base_html(title: str, body_content: str, head_extra: str = "") -> str:
+    return f'''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="FitCheck"><title>{escape(title)}</title>{head_extra}<style>{_DARK_CSS}</style></head><body><main class="container">{body_content}</main></body></html>'''
+
+
+def _plotly_js() -> str:
+    """Return the vendored Plotly JS for embedding (empty when the asset is absent)."""
+    from pathlib import Path
+
+    asset = Path(__file__).parent / "viz" / "plotly.min.js"
+    return asset.read_text(encoding="utf-8") if asset.exists() else ""
 
 
 def _metric_card(label: str, value: Any, color: str | None = None) -> str:
@@ -38,8 +46,9 @@ def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: st
     return _render(_base_html("FitCheck Dataset Report", "".join(parts)), output)
 
 
-def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str | None) -> str:
+def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str | None, renderer: str = "static") -> str:
     """Render the model report; writes to ``output`` when provided and returns the HTML."""
+    head_extra = f"<script>{_plotly_js()}</script>" if renderer == "plotly" else ""
     parts = [f'<h1>FitCheck Model Report</h1><p class="subtitle">Evaluation diagnostics for a {escape(task)} task.</p><div class="card"><span class="badge badge-info">{escape(task.upper())}</span></div><h2>Metrics</h2><div class="metric-grid">']
     for key, value in metrics.items():
         if key not in ("feature_importance", "per_class_errors"):
@@ -48,9 +57,12 @@ def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str
     parts.append("</div>")
     if plots:
         parts.append('<h2>Visualizations</h2><div class="plot-grid">')
-        for name, b64 in plots.items():
+        for name, fragment in plots.items():
             title = name.replace("_", " ").title()
-            parts.append(f'<div class="card"><h3>{escape(title)}</h3><img class="plot-img" src="data:image/png;base64,{b64}" alt="{escape(title)}"></div>')
+            if fragment.startswith("<"):
+                parts.append(f'<div class="card"><h3>{escape(title)}</h3>{fragment}</div>')
+            else:
+                parts.append(f'<div class="card"><h3>{escape(title)}</h3><img class="plot-img" src="data:image/png;base64,{fragment}" alt="{escape(title)}"></div>')
         parts.append("</div>")
     if "per_class_errors" in metrics:
         parts.append('<h2>Per-class error analysis</h2><div class="card"><table><tr><th>Class</th><th>Error rate</th></tr>')
@@ -63,7 +75,7 @@ def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str
             parts.append(f"<tr><td>{escape(str(feat))}</td><td>{float(imp):.4f}</td></tr>")
         parts.append("</table></div>")
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
-    return _render(_base_html("FitCheck Model Report", "".join(parts)), output)
+    return _render(_base_html("FitCheck Model Report", "".join(parts), head_extra=head_extra), output)
 
 
 def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_df: pd.DataFrame, output: str | None) -> str:
@@ -119,5 +131,7 @@ def _render(content: str, output: str | None) -> str:
 
 
 def _write(output: str, content: str) -> None:
-    with open(output, "w", encoding="utf-8") as file:
+    # errors="replace" keeps reports writable even when the data preview
+    # contains lone surrogates from mixed-encoding inputs.
+    with open(output, "w", encoding="utf-8", errors="replace") as file:
         file.write(content)

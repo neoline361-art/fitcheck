@@ -61,6 +61,10 @@ dev = [
     "pip-audit>=2.7.0",
     "pre-commit>=3.5.0",
     "ipython>=8.12.0",
+    "plotly>=5.18.0",
+    "polars>=0.20.0",
+    "pyarrow>=14.0.0",
+    "pyyaml>=6.0.0",
 ]
 docs = [
     "mkdocs>=1.5.0",
@@ -68,6 +72,23 @@ docs = [
 ]
 jupyter = [
     "ipython>=8.12.0",
+]
+plotly = [
+    "plotly>=5.18.0",
+]
+polars = [
+    "polars>=0.20.0",
+    "pyarrow>=14.0.0",
+]
+shap = [
+    "shap>=0.44.0",
+]
+mlflow = [
+    "mlflow>=2.10.0",
+]
+dvc = [
+    "dvc>=3.0.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.scripts]

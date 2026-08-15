@@ -53,8 +53,8 @@ jobs:
         run: |
           pip install -r requirements.lock
           pip install -e . --no-deps
-      - name: Run demo
-        run: fitcheck demo
+      - name: Run demo (headless)
+        run: fitcheck demo --no-browser
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

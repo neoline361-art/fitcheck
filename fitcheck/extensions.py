@@ -44,6 +44,45 @@ def validate_timeseries(
     return issues
 
 
+def detect_seasonality(series: pd.Series, period: int | None = None) -> dict[str, Any] | None:
+    """Return an info issue when the series shows a repeatable seasonal pattern.
+
+    Uses autocorrelation at a candidate lag (upgrade path: STL decomposition via
+    ``statsmodels.tsa.seasonal.STL`` once statsmodels becomes a dependency).
+    """
+    values = pd.to_numeric(series, errors="coerce").dropna()
+    if len(values) < 30:
+        return None
+    lag = period or _infer_seasonal_lag(values)
+    if lag is None or lag < 2 or lag >= len(values) // 3:
+        return None
+    autocorr = float(values.autocorr(lag=lag))
+    if autocorr >= 0.5:
+        return {
+            "column": getattr(series, "name", ""),
+            "type": "timeseries_seasonality",
+            "severity": "info",
+            "message": f"Possible {lag}-step seasonality detected (autocorrelation {autocorr:.2f})",
+            "suggestion": "Confirm with domain knowledge, then model the seasonal component explicitly",
+        }
+    return None
+
+
+def _infer_seasonal_lag(values: pd.Series) -> int | None:
+    """Pick the lag with the strongest positive autocorrelation among common periods."""
+    best_lag, best_score = None, 0.5
+    for lag in (7, 12, 24, 30):  # daily-weekly, monthly, hourly-daily, daily-monthly
+        if lag >= len(values) // 3:
+            continue
+        try:
+            score = float(values.autocorr(lag=lag))
+        except ValueError:
+            continue
+        if score > best_score:
+            best_lag, best_score = lag, score
+    return best_lag
+
+
 def _detect_ts_gaps(values: pd.Series, time_column: str, gap_multiplier: float) -> list[dict[str, Any]]:
     """Flag time gaps that exceed the expected sampling frequency."""
     diffs = values.dropna().sort_values().diff().dropna()

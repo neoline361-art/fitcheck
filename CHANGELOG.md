@@ -4,6 +4,19 @@ All notable changes to FitCheck are documented here.
 
 ## [Unreleased]
 
+### Added
+- Text-encoding check (`text_encoding`) flags object columns with non-UTF8 encodable characters.
+- Autocorrelation-based seasonality hint via `fitcheck.detect_seasonality(series, period=None)`.
+- Optional SHAP fallback for feature importance (`pip install data-fitcheck[shap]`).
+- Optional polars loading backend: `fitcheck check data.parquet --backend polars` (`pip install data-fitcheck[polars]`).
+- Optional interactive Plotly renderer: `fitcheck report ... --renderer plotly` (`pip install data-fitcheck[plotly]`); vendored Plotly JS keeps reports offline.
+- Optional MLflow / DVC callbacks (`log_to_mlflow`, `log_to_dvc`).
+- GitHub Action template: `.github/workflows/fitcheck-action.yml.example`.
+- `fitcheck demo` supports `--no-browser` and `--output-dir`; duplicate `[1/3]` progress counter removed.
+
+### Fixed
+- Deprecation warnings: `is_categorical_dtype` replaced with `isinstance(dtype, pd.CategoricalDtype)` (pandas 3.0 readiness); Chi-squared drift no longer triggers the positional-index FutureWarning.
+
 ## [2.1.0] - 2026-08-15
 
 ### Added
