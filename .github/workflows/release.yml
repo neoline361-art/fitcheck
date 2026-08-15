@@ -5,8 +5,8 @@ on:
     tags: ["v*"]
 
 permissions:
-  id-token: write  # Sigstore signing + trusted PyPI publishing
-  contents: write  # GitHub release attachments
+  id-token: write
+  contents: write
 
 jobs:
   publish:
@@ -16,32 +16,39 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install from lock file
         run: |
           pip install -r requirements.lock
           pip install -e . --no-deps
-          pip install build twine
+
       - name: Verify version matches tag
-        env:
-          REF_NAME: ${{ github.ref_name }}
         run: |
-          python -c "import fitcheck, os; tag = os.environ['REF_NAME'].removeprefix('v'); assert fitcheck.__version__ == tag, (fitcheck.__version__, tag)"
+          VERSION=$(python -c "import fitcheck; print(fitcheck.__version__)")
+          TAG=${GITHUB_REF#refs/tags/v}
+          [ "$VERSION" = "$TAG" ] || { echo "Version mismatch: $VERSION != $TAG"; exit 1; }
+
       - name: Build package
-        run: python -m build
-      - name: Publish to PyPI (trusted publishing)
-        # Requires a PyPI "trusted publisher" environment configured in repo settings.
+        run: pip install build && python -m build
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
       - name: Sign with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.5.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
-      - name: Generate CycloneDX SBOM
+
+      - name: Generate SBOM
         run: |
           pip install cyclonedx-bom
-          cyclonedx-py environment --outfile sbom.json
+          cyclonedx-py environment -o sbom.json
+
       - name: Upload release artifacts
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             ./dist/*
             ./sbom.json
+            ./*.sig
+            ./*.crt
