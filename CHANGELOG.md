@@ -2,7 +2,12 @@
 
 All notable changes to FitCheck are documented here.
 
-## [Unreleased]
+## [3.1.1] - 2026-08-15
+
+### Fixed
+- Release pipeline artifact generation: Sigstore signing, CycloneDX SBOM, and GitHub release assets. v3.1.0 published to PyPI but the workflow stopped at the SBOM step, so 3.1.1 re-releases through the complete signed pipeline.
+
+## [3.1.0] - 2026-08-15
 
 ### Added
 - Text-encoding check (`text_encoding`) flags object columns with non-UTF8 encodable characters.

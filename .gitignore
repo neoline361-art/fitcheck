@@ -50,3 +50,7 @@ venv/
 Thumbs.db
 *.csv
 *_fix_script.py
+
+# mutmut
+.mutmut-cache
+mutants/

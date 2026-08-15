@@ -394,7 +394,7 @@ class TestIntegration:
         """Version is accessible and single-sourced."""
         from fitcheck._version import __version__ as source_version
 
-        assert fitcheck.__version__ == "3.1.0"
+        assert fitcheck.__version__ == "3.1.1"
         assert fitcheck.__version__ == source_version
         assert "check" in fitcheck.__all__
         assert "report" in fitcheck.__all__
