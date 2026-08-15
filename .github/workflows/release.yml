@@ -33,6 +33,8 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true  # idempotent re-runs: don't fail on already-uploaded versions (HTTP 400)
 
       - name: Sign with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.5.0
