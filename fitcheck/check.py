@@ -54,6 +54,8 @@ def check(
         "duplicate_threshold": 0.05,
         "imbalance_threshold": 0.80,
         "outlier_threshold": 0.01,
+        "high_cardinality_ratio": 0.95,
+        "text_length_outlier_multiplier": 3.0,
     }
     if config:
         unknown = set(config) - set(thresholds)
@@ -68,6 +70,8 @@ def check(
     issues.extend(_detect_missing(df, config))
     issues.extend(_detect_duplicates(df, config))
     issues.extend(_detect_constants(df))
+    issues.extend(_detect_high_cardinality(df, config))
+    issues.extend(_detect_text_length(df, config))
     if target and target in df.columns:
         issues.extend(_detect_imbalance(df, target, config))
         issues.extend(_detect_outliers(df, config, exclude=target))
@@ -243,6 +247,59 @@ def _detect_outliers(
                     "severity": "info",
                     "message": f"{col}: {outlier_count} outliers ({pct:.1%}) via IQR",
                     "suggestion": f'Review extreme values in "{col}" or apply capping',
+                }
+            )
+    return issues
+
+
+def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
+    """Flag ID-like columns whose uniqueness ratio exceeds the configured threshold."""
+    issues = []
+    threshold = config["high_cardinality_ratio"]
+    for col in df.columns:
+        dtype = df[col].dtype
+        # Continuous floats are expected to be ~unique; only ID-like dtypes are meaningful.
+        if not (
+            pd.api.types.is_object_dtype(dtype)
+            or pd.api.types.is_categorical_dtype(dtype)
+            or pd.api.types.is_integer_dtype(dtype)
+        ):
+            continue
+        non_null = df[col].dropna()
+        if len(non_null) < 50:
+            continue  # cardinality is only meaningful past 50 rows (upgrade path: make configurable)
+        ratio = non_null.nunique() / len(non_null)
+        if ratio > threshold:
+            issues.append(
+                {
+                    "column": col,
+                    "type": "high_cardinality",
+                    "severity": "info",
+                    "message": f"{col}: {non_null.nunique()} unique values ({ratio:.1%} uniqueness)",
+                    "suggestion": f'Verify "{col}" is not an ID column; group or hash high-cardinality values',
+                }
+            )
+    return issues
+
+
+def _detect_text_length(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
+    """Flag object columns whose string lengths are strongly skewed (mean >> median)."""
+    issues = []
+    multiplier = config["text_length_outlier_multiplier"]
+    for col in df.select_dtypes(include=["object"]).columns:
+        lengths = df[col].dropna().astype(str).str.len()
+        if len(lengths) < 10:
+            continue
+        median = float(lengths.median())
+        mean = float(lengths.mean())
+        if mean > multiplier * max(median, 1.0):
+            issues.append(
+                {
+                    "column": col,
+                    "type": "text_length_outliers",
+                    "severity": "info",
+                    "message": f"{col}: mean length {mean:.1f} vs median {median:.1f} (possible outliers)",
+                    "suggestion": f'Review unusually long strings in "{col}" or truncate/normalize',
                 }
             )
     return issues

@@ -5,9 +5,12 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["fitcheck"]
 
+[tool.hatch.version]
+path = "fitcheck/_version.py"
+
 [project]
 name = "data-fitcheck"
-version = "2.0.2"
+dynamic = ["version"]
 description = "Zero-boilerplate ML data validation and model evaluation."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -62,6 +65,9 @@ docs = [
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.4.0",
 ]
+jupyter = [
+    "ipython>=8.12.0",
+]
 
 [project.scripts]
 fitcheck = "fitcheck.cli:main"
@@ -90,9 +96,6 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = ["E501"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
 
 [tool.mypy]
 python_version = "3.13"

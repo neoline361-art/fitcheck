@@ -49,3 +49,4 @@ venv/
 .DS_Store
 Thumbs.db
 *.csv
+*_fix_script.py

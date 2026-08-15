@@ -13,6 +13,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
 from sklearn import metrics as sk_metrics
+from sklearn.calibration import calibration_curve
 
 from fitcheck.html import render_report_html
 
@@ -87,6 +88,7 @@ def _classification_report(
         precision_curve, recall_curve, thresholds = sk_metrics.precision_recall_curve(binary_y, probabilities)
         metrics["roc_auc"] = round(float(roc_auc), 4)
         metrics["average_precision"] = round(float(sk_metrics.average_precision_score(binary_y, probabilities)), 4)
+        metrics["brier"] = round(float(sk_metrics.brier_score_loss(binary_y, probabilities)), 4)
         best_idx = int(np.argmax(2 * precision_curve * recall_curve / np.maximum(precision_curve + recall_curve, 1e-12)))
         metrics["recommended_threshold"] = round(float(thresholds[min(best_idx, len(thresholds) - 1)]) if len(thresholds) else 0.5, 4)
         fig, ax = plt.subplots(figsize=(6, 5))
@@ -106,16 +108,49 @@ def _classification_report(
         ax.legend()
         plots["pr_curve"] = _fig_to_base64(fig)
         plt.close(fig)
+        try:
+            frac_pos, mean_pred = calibration_curve(binary_y, probabilities, n_bins=10)
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(mean_pred, frac_pos, marker="o", label="Model")
+            ax.plot([0, 1], [0, 1], "k--", label="Perfectly calibrated")
+            ax.set_xlabel("Mean predicted probability")
+            ax.set_ylabel("Fraction of positives")
+            ax.set_title("Calibration Curve")
+            ax.legend()
+            plots["calibration_curve"] = _fig_to_base64(fig)
+            plt.close(fig)
+        except ValueError:
+            pass  # too few samples for binning; calibration plot skipped
+    metrics["per_class_errors"] = _per_class_errors(y_test, y_pred, labels)
     return metrics, plots
+
+
+def _per_class_errors(y_test: NDArray[Any], y_pred: NDArray[Any], labels: NDArray[Any]) -> dict[str, float]:
+    """Error rate per true class, useful for finding systematically misclassified groups."""
+    errors: dict[str, float] = {}
+    for label in labels:
+        mask = y_test == label
+        if not int(mask.sum()):
+            continue
+        errors[str(label)] = round(float((y_pred[mask] != label).mean()), 4)
+    return errors
 
 
 def _regression_report(model: Any, x_test: Any, y_test: NDArray[Any]) -> tuple[dict[str, Any], dict[str, str]]:
     y_pred = np.asarray(model.predict(x_test))
     mse = float(sk_metrics.mean_squared_error(y_test, y_pred))
+    r2 = float(sk_metrics.r2_score(y_test, y_pred))
+    n = int(len(y_test))
+    p = int(_feature_count(x_test))
+    adjusted_r2: float | None = None
+    if n - p - 1 > 0:
+        adjusted_r2 = round(1.0 - (1.0 - r2) * (n - 1) / (n - p - 1), 4)
     metrics: dict[str, Any] = {
         "mse": round(mse, 4), "rmse": round(float(np.sqrt(mse)), 4),
         "mae": round(float(sk_metrics.mean_absolute_error(y_test, y_pred)), 4),
-        "r2": round(float(sk_metrics.r2_score(y_test, y_pred)), 4), "support": int(len(y_test)),
+        "r2": round(r2, 4), "adjusted_r2": adjusted_r2,
+        "explained_variance": round(float(sk_metrics.explained_variance_score(y_test, y_pred)), 4),
+        "support": n,
     }
     plots: dict[str, str] = {}
     residuals = y_test - y_pred
@@ -138,6 +173,14 @@ def _regression_report(model: Any, x_test: Any, y_test: NDArray[Any]) -> tuple[d
     plots["actual_vs_predicted"] = _fig_to_base64(fig)
     plt.close(fig)
     return metrics, plots
+
+
+def _feature_count(x_test: Any) -> int:
+    """Number of model features, whether X is a DataFrame or an array."""
+    if hasattr(x_test, "columns"):
+        return int(len(x_test.columns))
+    arr = np.asarray(x_test)
+    return int(arr.shape[1]) if arr.ndim > 1 else 1
 
 
 def _tree_importance(model: Any, x_test: NDArray[Any], feature_names: list[str] | None = None) -> dict[str, float] | None:

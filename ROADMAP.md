@@ -1,24 +1,33 @@
 # Roadmap
 
-## v2.1 (Next)
-- [ ] PyPI publishing (`pip install fitcheck`)
-- [ ] Additional drift tests: PSI, Wasserstein distance
-- [ ] Time-series data validation
-- [ ] Text column analysis (length distribution, encoding detection)
-- [ ] CI matrix badge
+## Shipped (v2.0 → v2.1)
 
-## v2.2
-- [ ] Parallel dataset validation (multi-CPU)
-- [ ] Custom threshold configuration via file or CLI flags
-- [ ] Integration with MLflow / DVC
+- PyPI publishing (`pip install data-fitcheck`)
+- PSI + Wasserstein drift methods with automatic numeric-method selection
+- Configurable thresholds via Python API and CLI
+- `fitcheck full` one-command workflow (executive index report, optional model)
+- CI-native CLI: `--json`, `--quiet`, `--fail-on`, exit codes 0/1/2/3
+- High-cardinality, text-length, and time-series gap checks; schema drift detection
+- Jensen–Shannon drift method
+- Model calibration (Brier, reliability diagram) and per-class error analysis
+- Lightweight plugin registry + `--plugins` CLI flag
+- Jupyter magics (`%fitcheck`, `%%fitcheck`)
+- Pre-commit hook (repo root, corrected file pattern)
+- Single source of version (`fitcheck/_version.py`)
 
-## v3.0
-- [ ] Web UI using the Python library as backend
-- [ ] Real-time streaming data validation
-- [ ] Plugin system for custom checks
-- [ ] Jupyter notebook widget
+## v3.0 (Next)
+
+- [ ] Interactive Plotly reports (CDN with offline matplotlib fallback)
+- [ ] Polars backend for 10M+ rows (requires a backend-agnostic check engine)
+- [ ] Text encoding detection, time-series seasonality (STL decomposition)
+- [ ] SHAP feature importance (optional dependency)
+- [ ] Reproducible builds: lock file, Sigstore signing, CycloneDX SBOM, release workflow
+- [ ] Mutation testing (mutmut) to validate test quality
 
 ## Backlog
-- Deep learning model evaluation (PyTorch, TensorFlow)
+
+- Parallel dataset validation (multi-CPU)
+- MLflow / DVC integrations
+- Web UI and streaming data validation
+- Deep learning model evaluation helpers (PyTorch, TensorFlow)
 - GPU-accelerated drift detection
-- Automated data quality monitoring schedules

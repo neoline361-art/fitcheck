@@ -1,9 +1,9 @@
-# FitCheck pre-commit hook — run data validation on CSV changes
+# FitCheck pre-commit hook — run data validation on changed CSV/Parquet files
 - id: fitcheck
   name: FitCheck Data Validation
   description: Run FitCheck on changed CSV/Parquet files
   entry: fitcheck check
   language: python
-  files: \*\.(csv|parquet)$
+  files: \.(csv|parquet)$
   pass_filenames: true
-  args: [--output, fitcheck_report.html]
+  args: [--quiet, --fail-on, critical]

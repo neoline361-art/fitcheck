@@ -11,12 +11,12 @@ Validate dataset health without mutating the input.
 | `output` | `str` | `fitcheck_report.html` | Self-contained HTML report path |
 | `return_format` | `str` | `list` | `list`, `dict`, or `json` |
 | `auto_fix` | `bool` | `False` | Generate a transparent Python fix script when issues exist |
-| `config` | `dict[str, float]` or `None` | `None` | Overrides for `missing_warning`, `missing_critical`, `duplicate_threshold`, `imbalance_threshold`, and `outlier_threshold` |
+| `config` | `dict[str, float]` or `None` | `None` | Overrides for `missing_warning`, `missing_critical`, `duplicate_threshold`, `imbalance_threshold`, `outlier_threshold`, `high_cardinality_ratio`, and `text_length_outlier_multiplier` |
 | `plugins` | `list[Callable]` or `None` | `None` | Optional custom checks that return issue dictionaries |
-| `time_column` | `str` or `None` | `None` | Optional timestamp column for ordering, parsing, and duplicate checks |
+| `time_column` | `str` or `None` | `None` | Optional timestamp column for ordering, parsing, duplicate, and frequency-gap checks |
 | `sample_rows` | `int` or `None` | `None` | For CSV input, inspect only the first N rows and mark the result as sampled |
 
-The default checks cover missing values, duplicate rows, constant columns, class imbalance, and numeric IQR outliers. Optional plugins and time-series checks are explicit additions. `sample_rows` is a memory-aware review, not a full-dataset audit; the returned dictionary records that distinction.
+The default checks cover missing values, duplicate rows, constant columns, class imbalance, numeric IQR outliers, high cardinality, and text-length skew. Optional plugins and time-series checks are explicit additions. `sample_rows` is a memory-aware review, not a full-dataset audit; the returned dictionary records that distinction.
 
 ```python
 result = fitcheck.check(
@@ -38,16 +38,16 @@ Evaluate a trained model and write an HTML report. A pandas DataFrame is passed 
 | `y_test` | `pd.Series` or `np.ndarray` | required | Test targets |
 | `output` | `str` | `model_report.html` | HTML report path |
 
-Classification reports include accuracy, weighted precision/recall/F1, support, confusion matrix, and, for binary probabilistic models, ROC-AUC, average precision, ROC and precision–recall curves, and a recommended threshold. Regression reports include MSE, RMSE, MAE, R², residuals, and actual-versus-predicted plots. Tree feature importance is included when exposed by the model.
+Classification reports include accuracy, weighted precision/recall/F1, support, confusion matrix, and, for binary probabilistic models, ROC-AUC, average precision, Brier score, ROC, precision–recall and calibration curves, a recommended threshold, and per-class error rates. Regression reports include MSE, RMSE, MAE, R², adjusted R², explained variance, residuals, and actual-versus-predicted plots. Tree feature importance is included when exposed by the model.
 
 ```python
 metrics = fitcheck.report(model, X_test, y_test)
 print(metrics["accuracy"])
 ```
 
-## `fitcheck.detect_drift(reference, production, output="drift_report.html", threshold=0.05, method="auto", psi_threshold=0.20, wasserstein_threshold=0.10)`
+## `fitcheck.detect_drift(reference, production, output="drift_report.html", threshold=0.05, method="auto", psi_threshold=0.20, wasserstein_threshold=0.10, js_threshold=0.10)`
 
-Compare common features between a reference dataset and production data.
+Compare common features between a reference dataset and production data. Schema drift — columns missing on either side and dtype family changes — is always reported as critical.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -55,9 +55,10 @@ Compare common features between a reference dataset and production data.
 | `production` | `str` or `pd.DataFrame` | required | Production dataset |
 | `output` | `str` | `drift_report.html` | HTML report path |
 | `threshold` | `float` | `0.05` | P-value threshold for KS and Chi-squared |
-| `method` | `str` | `auto` | `auto`, `ks`, `psi`, `wasserstein`, or `chi2` |
+| `method` | `str` | `auto` | `auto`, `ks`, `psi`, `wasserstein`, `chi2`, or `js` |
 | `psi_threshold` | `float` | `0.20` | PSI drift threshold |
 | `wasserstein_threshold` | `float` | `0.10` | Normalized Wasserstein threshold |
+| `js_threshold` | `float` | `0.10` | Jensen–Shannon divergence threshold |
 
 Automatic selection uses KS for smaller numeric samples, PSI for larger numeric samples, and Chi-squared for categorical features. The normalized Wasserstein statistic divides distance by the reference standard deviation, making it easier to compare across feature scales.
 
@@ -72,4 +73,31 @@ drifted = sum(result["drifted"] for result in results)
 fitcheck full data.csv --target label --model model.joblib --reference train.csv --output-dir reports
 ```
 
-The full command writes dataset and model reports and adds a drift report when `--reference` is provided. It uses all columns except the target as model features.
+The full command writes dataset and model reports and adds a drift report when `--reference` is provided; `--model` is optional. It always writes an executive `index.html` linking the three reports. It uses all columns except the target as model features.
+
+## Plugins
+
+```python
+from fitcheck.plugins import registry, load_plugin
+
+registry.register("domain", my_check)          # named registration
+check("data.csv", plugins=[load_plugin("domain")])
+# or resolve a dotted module path:
+check("data.csv", plugins=[load_plugin("my_pkg.my_checks")])
+```
+
+## Exit codes
+
+`fitcheck check` returns `0` (pass), `1` (warnings), `2` (critical), or `3` (runtime error). `--fail-on` sets the minimum severity that fails the run; `--json` emits results to stdout; `--quiet` suppresses everything except JSON and the exit code.
+
+## Jupyter
+
+```bash
+pip install "data-fitcheck[jupyter]"
+```
+
+```python
+%load_ext fitcheck
+%fitcheck df --target label          # line magic
+%%fitcheck --target label            # cell magic, uses the df variable
+```

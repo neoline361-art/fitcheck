@@ -20,7 +20,8 @@ def _metric_card(label: str, value: Any, color: str | None = None) -> str:
     return f'<div class="metric-card"><div class="metric-value"{style}>{escape(str(value))}</div><div class="metric-label">{escape(label)}</div></div>'
 
 
-def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: str) -> None:
+def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: str | None) -> str:
+    """Render the dataset report; writes to ``output`` when provided and returns the HTML."""
     counts = {level: sum(1 for i in issues if i.get("severity") == level) for level in ("critical", "warning", "info")}
     status = "PASS" if not issues else "ISSUES FOUND"
     status_class = "badge-pass" if not issues else "badge-warning"
@@ -34,13 +35,14 @@ def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: st
     else:
         parts.append('<div class="callout"><strong>No issues detected.</strong> The dataset passed every configured check.</div>')
     parts.extend(['<h2>Data preview</h2><div class="card">', df.head(10).to_html(index=False, classes="preview-table", escape=True), '</div><div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>'])
-    _write(output, _base_html("FitCheck Dataset Report", "".join(parts)))
+    return _render(_base_html("FitCheck Dataset Report", "".join(parts)), output)
 
 
-def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str) -> None:
+def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str | None) -> str:
+    """Render the model report; writes to ``output`` when provided and returns the HTML."""
     parts = [f'<h1>FitCheck Model Report</h1><p class="subtitle">Evaluation diagnostics for a {escape(task)} task.</p><div class="card"><span class="badge badge-info">{escape(task.upper())}</span></div><h2>Metrics</h2><div class="metric-grid">']
     for key, value in metrics.items():
-        if key != "feature_importance":
+        if key not in ("feature_importance", "per_class_errors"):
             display = f"{value:.4f}" if isinstance(value, float) else value
             parts.append(_metric_card(key.replace("_", " "), display))
     parts.append("</div>")
@@ -50,16 +52,22 @@ def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str
             title = name.replace("_", " ").title()
             parts.append(f'<div class="card"><h3>{escape(title)}</h3><img class="plot-img" src="data:image/png;base64,{b64}" alt="{escape(title)}"></div>')
         parts.append("</div>")
+    if "per_class_errors" in metrics:
+        parts.append('<h2>Per-class error analysis</h2><div class="card"><table><tr><th>Class</th><th>Error rate</th></tr>')
+        for label, rate in metrics["per_class_errors"].items():
+            parts.append(f"<tr><td>{escape(str(label))}</td><td>{float(rate):.4f}</td></tr>")
+        parts.append("</table></div>")
     if "feature_importance" in metrics:
         parts.append('<h2>Feature importance</h2><div class="card"><table><tr><th>Feature</th><th>Importance</th></tr>')
         for feat, imp in list(metrics["feature_importance"].items())[:15]:
             parts.append(f"<tr><td>{escape(str(feat))}</td><td>{float(imp):.4f}</td></tr>")
         parts.append("</table></div>")
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
-    _write(output, _base_html("FitCheck Model Report", "".join(parts)))
+    return _render(_base_html("FitCheck Model Report", "".join(parts)), output)
 
 
-def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_df: pd.DataFrame, output: str) -> None:
+def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_df: pd.DataFrame, output: str | None) -> str:
+    """Render the drift report; writes to ``output`` when provided and returns the HTML."""
     drifted = sum(1 for r in results if r.get("drifted"))
     status = "DRIFT DETECTED" if drifted else "NO DRIFT"
     status_class = "badge-critical" if drifted else "badge-pass"
@@ -75,7 +83,39 @@ def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_
                 parts.append(f'<li class="issue-item issue-critical"><strong>{escape(str(result.get("feature", "")))}</strong> — {escape(str(result.get("message", "")))}</li>')
         parts.append("</ul>")
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
-    _write(output, _base_html("FitCheck Drift Report", "".join(parts)))
+    return _render(_base_html("FitCheck Drift Report", "".join(parts)), output)
+
+
+def render_full_html(summary: dict[str, Any], output: str) -> str:
+    """Render an executive index report for ``fitcheck full``."""
+    dataset = summary.get("dataset", {})
+    model = summary.get("model", {})
+    drift = summary.get("drift", {})
+    parts = [
+        '<h1>FitCheck Executive Report</h1>',
+        '<p class="subtitle">Dataset health, model evaluation, and drift — one overview.</p>',
+        '<div class="metric-grid">',
+        _metric_card("Dataset issues", dataset.get("issues", 0), "warning" if dataset.get("issues") else "pass"),
+        _metric_card("Dataset critical", dataset.get("critical", 0), "critical" if dataset.get("critical") else None),
+        _metric_card("Model task", str(model.get("task", "—")).upper()),
+        _metric_card("Drift features", drift.get("features", 0)),
+        _metric_card("Drifted", drift.get("drifted", 0), "critical" if drift.get("drifted") else "pass"),
+        '</div>',
+        '<h2>Reports</h2><ul class="issue-list">',
+        f'<li class="issue-item"><a href="dataset_report.html"><strong>Dataset health</strong></a> — {dataset.get("issues", 0)} issues ({dataset.get("critical", 0)} critical)</li>',
+        f'<li class="issue-item"><a href="model_report.html"><strong>Model evaluation</strong></a> — {model.get("task", "not run")}</li>',
+        f'<li class="issue-item"><a href="drift_report.html"><strong>Drift detection</strong></a> — {drift.get("drifted", 0)} of {drift.get("features", 0)} features drifted</li>',
+        '</ul>',
+        '<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>',
+    ]
+    return _render(_base_html("FitCheck Executive Report", "".join(parts)), output)
+
+
+def _render(content: str, output: str | None) -> str:
+    """Write ``content`` to ``output`` when given and always return it."""
+    if output is not None:
+        _write(output, content)
+    return content
 
 
 def _write(output: str, content: str) -> None:

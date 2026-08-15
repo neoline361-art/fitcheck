@@ -7,7 +7,6 @@ import pandas as pd
 
 from fitcheck.check import check
 
-
 out = Path("/tmp/fitcheck-contact-smoke")
 out.mkdir(exist_ok=True)
 path = out / "contacts_1m.csv"

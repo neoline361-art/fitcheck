@@ -391,11 +391,16 @@ class TestIntegration:
     """End-to-end integration tests."""
 
     def test_version(self) -> None:
-        """Version is accessible."""
-        assert fitcheck.__version__ == "2.0.2"
+        """Version is accessible and single-sourced."""
+        from fitcheck._version import __version__ as source_version
+
+        assert fitcheck.__version__ == "2.1.0"
+        assert fitcheck.__version__ == source_version
         assert "check" in fitcheck.__all__
         assert "report" in fitcheck.__all__
         assert "detect_drift" in fitcheck.__all__
+        assert "registry" in fitcheck.__all__
+        assert "load_plugin" in fitcheck.__all__
 
     def test_package_imports(self) -> None:
         """All public functions are importable."""
@@ -420,3 +425,18 @@ class TestIntegration:
 
         result = main(["demo"])
         assert result == 0
+
+    def test_main_module_runs(self, monkeypatch, capsys) -> None:
+        """`python -m fitcheck` prints help and exits cleanly."""
+        import runpy
+
+        monkeypatch.setattr("sys.argv", ["fitcheck"])
+        runpy.run_module("fitcheck.__main__", run_name="__main__")
+        assert "usage" in capsys.readouterr().out.lower()
+
+    def test_pro_module_importable(self) -> None:
+        """The pro shim exposes the fix script API."""
+        from fitcheck.pro import FixScriptGenerator, generate_fix_script
+
+        assert callable(FixScriptGenerator)
+        assert callable(generate_fix_script)

@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-44%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-65%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 FitCheck is a local-first toolkit for answering three questions quickly: **Is this dataset healthy? Is this model behaving? Has production data changed?** Every workflow produces a self-contained HTML report that can be opened locally and shared in a pull request, Slack, or an incident review.
@@ -76,10 +76,11 @@ fitcheck.check(
 
 | Area | Built-in diagnostics |
 |---|---|
-| Dataset health | Missing values, duplicates, constants, class imbalance, and IQR outliers |
-| Model classification | Accuracy, precision, recall, F1, confusion matrix, ROC/AUC, average precision, precision–recall curve, recommended threshold, and tree feature importance |
-| Model regression | MSE, RMSE, MAE, R², residual analysis, actual-versus-predicted plot, and tree feature importance |
-| Drift | Automatic KS/PSI selection for numeric data, explicit Wasserstein distance, and Chi-squared categorical comparisons |
+| Dataset health | Missing values, duplicates, constants, class imbalance, IQR outliers, high cardinality, text-length skew |
+| Time series | Timestamp parsing, monotonicity, duplicates, and frequency gaps (`--time-column`) |
+| Model classification | Accuracy, precision, recall, F1, confusion matrix, ROC/AUC, average precision, precision–recall curve, recommended threshold, Brier score, calibration curve, per-class error analysis, and tree feature importance |
+| Model regression | MSE, RMSE, MAE, R², adjusted R², explained variance, residual analysis, actual-versus-predicted plot, and tree feature importance |
+| Drift | Automatic KS/PSI selection for numeric data, explicit Wasserstein and Jensen–Shannon distance, Chi-squared categorical comparisons, and schema drift (missing columns / dtype changes) |
 | Reports | Severity badges, recommendations, responsive tables, embedded plots, and no external assets |
 
 For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger numeric samples. Use `method="wasserstein"` when a normalized distribution-distance signal is more useful than a hypothesis test.
@@ -88,10 +89,58 @@ For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger 
 
 ```bash
 fitcheck check data.csv --target label
+fitcheck check data1.csv data2.csv            # multi-file check
 fitcheck check data.csv --missing-warning 0.10 --missing-critical 0.30
+fitcheck check data.csv --time-column timestamp --plugins my_checks
 fitcheck report model.joblib X_test.npy y_test.npy
 fitcheck drift train.csv production.csv --method psi
+fitcheck full data.csv --target label --model model.joblib --reference train.csv
 fitcheck demo
+```
+
+## CI and exit codes
+
+`fitcheck check` is CI-native: run it with `--json` for machine-readable output, `--quiet` to suppress everything except the exit code, and `--fail-on` to pick the severity that fails a pipeline.
+
+```bash
+fitcheck check data.csv --target label --json --quiet --fail-on critical
+echo $?   # 0 pass, 1 warnings, 2 critical, 3 runtime error
+```
+
+`--json` emits a result dict for a single file and a list of dicts for multiple files. High-cardinality detection targets ID-like columns (object, category, and integer dtypes), so continuous numeric measurements are not flagged as cardinality issues.
+
+| Exit code | Meaning |
+|---|---|
+| `0` | No issues (or only issues below `--fail-on`) |
+| `1` | Warnings found |
+| `2` | Critical issues found |
+| `3` | Runtime error (missing file, invalid config) |
+
+The repository ships a [pre-commit hook](.pre-commit-hooks.yaml) and a GitHub Action gate ([`.github/workflows/fitcheck-gate.yml`](.github/workflows/fitcheck-gate.yml)) so dataset health blocks merges the same way linting does.
+
+## Plugins and Jupyter
+
+Custom checks are plain functions that take a DataFrame and return issue dictionaries:
+
+```python
+from fitcheck.plugins import registry
+
+def my_check(df):
+    return [{"column": "x", "type": "custom", "severity": "warning",
+             "message": "custom rule triggered", "suggestion": "fix it"}]
+
+registry.register("my_check", my_check)
+```
+
+```bash
+fitcheck check data.csv --plugins my_check
+```
+
+Inside a notebook, `%load_ext fitcheck` enables inline reports:
+
+```python
+%load_ext fitcheck
+%fitcheck df --target label
 ```
 
 ## Reports and privacy
@@ -101,7 +150,8 @@ FitCheck does not upload input data. HTML reports embed generated plots as base6
 ## Development and verification
 
 ```bash
-pip install -e ".[dev]"
+pip install -r requirements.lock   # reproducible dev environment
+pip install -e . --no-deps
 ruff check fitcheck tests
 mypy fitcheck
 bandit -r fitcheck/ -x tests

@@ -9,7 +9,7 @@ from scipy import stats
 
 from fitcheck.html import render_drift_html
 
-DriftMethod = Literal["auto", "ks", "psi", "wasserstein", "chi2"]
+DriftMethod = Literal["auto", "ks", "psi", "wasserstein", "chi2", "js"]
 
 
 def detect_drift(
@@ -20,23 +20,24 @@ def detect_drift(
     method: DriftMethod = "auto",
     psi_threshold: float = 0.20,
     wasserstein_threshold: float = 0.10,
+    js_threshold: float = 0.10,
 ) -> list[dict[str, Any]]:
     """Detect distribution drift between reference and production data.
 
     ``auto`` uses KS for small numeric samples, PSI for larger numeric samples,
-    and Chi-squared for categorical features. Wasserstein can be selected
-    explicitly; its normalized distance is divided by the reference standard
-    deviation so the threshold is scale-independent.
+    and Chi-squared for categorical features. Wasserstein and Jensen–Shannon can
+    be selected explicitly. Schema drift (missing columns and dtype changes) is
+    always reported as critical.
     """
     if not 0 < threshold < 1:
         raise ValueError("threshold must be between 0 and 1")
-    if method not in {"auto", "ks", "psi", "wasserstein", "chi2"}:
+    if method not in {"auto", "ks", "psi", "wasserstein", "chi2", "js"}:
         raise ValueError(f"Unsupported drift method: {method}")
 
     ref_df = _load_data(reference)
     prod_df = _load_data(production)
+    results: list[dict[str, Any]] = _schema_drift(ref_df, prod_df)
     common_cols = [c for c in ref_df.columns if c in prod_df.columns]
-    results: list[dict[str, Any]] = []
 
     for col in common_cols:
         ref_col = ref_df[col].dropna()
@@ -49,6 +50,8 @@ def detect_drift(
             result = _psi_test(ref_col, prod_col, psi_threshold)
         elif selected == "wasserstein":
             result = _wasserstein_test(ref_col, prod_col, wasserstein_threshold)
+        elif selected == "js":
+            result = _js_test(ref_col, prod_col, js_threshold)
         else:
             result = _chi2_test(ref_col, prod_col, threshold)
         result["feature"] = col
@@ -64,6 +67,50 @@ def _select_method(method: DriftMethod, numeric: bool, ref_size: int, prod_size:
     if not numeric:
         return "chi2"
     return "ks" if min(ref_size, prod_size) < 1_000 else "psi"
+
+
+def _schema_drift(ref_df: pd.DataFrame, prod_df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Report missing columns and dtype changes as critical schema drift."""
+    results: list[dict[str, Any]] = []
+    for col in ref_df.columns:
+        if col not in prod_df.columns:
+            results.append(_schema_result(col, f"Column {col!r} present in reference but missing in production"))
+            continue
+        ref_dtype, prod_dtype = ref_df[col].dtype, prod_df[col].dtype
+        if _dtype_kind(ref_dtype) != _dtype_kind(prod_dtype):
+            results.append(_schema_result(col, f"Column {col!r} dtype changed from {ref_dtype} to {prod_dtype}"))
+    for col in prod_df.columns:
+        if col not in ref_df.columns:
+            results.append(_schema_result(col, f"Column {col!r} present in production but missing in reference"))
+    return results
+
+
+def _schema_result(feature: str, message: str) -> dict[str, Any]:
+    return {
+        "feature": feature,
+        "type": "schema",
+        "test": "Schema",
+        "statistic": 0.0,
+        "p_value": None,
+        "drifted": True,
+        "severity": "critical",
+        "message": message,
+        "suggestion": "Align the production schema with the reference schema before comparing distributions",
+    }
+
+
+def _dtype_kind(dtype: Any) -> str:
+    """Broad dtype family so float32/float64 and int8/int64 do not false-positive."""
+    kind = getattr(dtype, "kind", "O")
+    if kind in "iuf":
+        return "numeric"
+    if kind == "b":
+        return "bool"
+    if kind in "M":
+        return "datetime"
+    if kind == "O":
+        return "object"
+    return str(kind)
 
 
 def _load_data(data: str | pd.DataFrame) -> pd.DataFrame:
@@ -138,6 +185,30 @@ def _wasserstein_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float)
         "p_value": None, "drifted": drifted,
         "severity": "critical" if drifted else "info",
         "message": f"Normalized distance={distance:.4f} — {'drift detected' if drifted else 'no drift'}",
+    }
+
+
+def _js_test(ref_col: pd.Series, prod_col: pd.Series, threshold: float) -> dict[str, Any]:
+    """Jensen–Shannon divergence between two numeric distributions (base 2)."""
+    ref = pd.to_numeric(ref_col, errors="coerce").dropna().to_numpy(dtype=float)
+    prod = pd.to_numeric(prod_col, errors="coerce").dropna().to_numpy(dtype=float)
+    if len(ref) == 0 or len(prod) == 0 or np.ptp(ref) == 0:
+        return _empty_result("numeric", "JS", "Insufficient variation for Jensen–Shannon")
+    bins = np.unique(np.quantile(np.concatenate([ref, prod]), np.linspace(0, 1, 11)))
+    if len(bins) < 2:
+        return _empty_result("numeric", "JS", "Insufficient variation for Jensen–Shannon")
+    ref_hist = np.histogram(ref, bins=bins)[0].astype(float)
+    prod_hist = np.histogram(prod, bins=bins)[0].astype(float)
+    p = np.clip(ref_hist / len(ref), 1e-6, None)
+    q = np.clip(prod_hist / len(prod), 1e-6, None)
+    m = 0.5 * (p + q)
+    divergence = float(0.5 * (np.sum(p * np.log2(p / m)) + np.sum(q * np.log2(q / m))))
+    drifted = divergence >= threshold
+    return {
+        "type": "numeric", "test": "JS", "statistic": round(divergence, 4),
+        "p_value": None, "drifted": drifted,
+        "severity": "critical" if drifted else "info",
+        "message": f"Jensen–Shannon={divergence:.4f} — {'drift detected' if drifted else 'no drift'}",
     }
 
 

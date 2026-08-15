@@ -4,10 +4,17 @@ All notable changes to FitCheck are documented here.
 
 ## [Unreleased]
 
-### Changed
-- Dropped Python 3.9 support (EOL; vulnerable transitive dependencies have no patched 3.9 releases). Minimum is now Python 3.10.
+## [2.1.0] - 2026-08-15
 
 ### Added
+- CI-native CLI: `--json`, `--quiet`, `--fail-on {info,warning,critical}`, and exit codes 0/1/2/3 (3 = runtime error).
+- Multi-file dataset checks: `fitcheck check data1.csv data2.csv`.
+- High-cardinality and text-length checks; time-series gap detection (`--time-column`).
+- Jensen–Shannon drift method and schema drift detection (missing columns, dtype changes).
+- Model calibration (Brier score, reliability diagram) and per-class error analysis; adjusted R² and explained variance for regression.
+- Lightweight plugin registry (`fitcheck.plugins`) with a `--plugins` CLI flag.
+- Jupyter magics `%fitcheck` / `%%fitcheck` (`pip install data-fitcheck[jupyter]`).
+- `fitcheck full` works without `--model` and writes an executive index report.
 - `fitcheck full` one-command dataset, model, and optional drift workflow.
 - PSI and normalized Wasserstein drift methods with automatic numeric-method selection.
 - Configurable dataset thresholds through the Python API and CLI.
@@ -15,9 +22,18 @@ All notable changes to FitCheck are documented here.
 - Responsive report layouts, recommendations, embedded diagnostics, and safer HTML escaping.
 - Regression tests for thresholds, drift methods, model diagnostics, and the full workflow.
 
+### Changed
+- Single source of version: `fitcheck/_version.py` is read by both hatchling and the package.
+- Pre-commit hook moved to the repository root with a corrected `files` pattern.
+- Reproducible installs: `requirements.lock` (compiled for Python 3.10) pins runtime and dev dependencies; CI installs from the lock file.
+- Tag-triggered release workflow: locked build, trusted PyPI publishing, Sigstore signing, CycloneDX SBOM, and GitHub release attachments.
+- Dropped Python 3.9 support (EOL; vulnerable transitive dependencies have no patched 3.9 releases). Minimum is now Python 3.10.
+- CLI runtime errors (missing file, invalid config) now exit with code 3 instead of raising.
+- Removed generated demo artifacts from the package directory; test-data generator moved to `benchmarks/gen_data.py`.
+
 ### Fixed
 - Pandas DataFrames are preserved during model prediction, eliminating avoidable scikit-learn feature-name warnings.
-- README and API documentation now match the current 42-test project state.
+- README and API documentation now match the current project state.
 
 ## [2.0.2] - 2026-08-09
 
