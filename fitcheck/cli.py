@@ -48,9 +48,9 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--time-column", default=None, help="Timestamp column for time-series checks")
     check_parser.add_argument(
         "--backend",
-        choices=["pandas", "polars"],
+        choices=["pandas", "polars", "duckdb"],
         default="pandas",
-        help="Data loading backend (polars is faster for large files; optional dependency)",
+        help="Data loading backend (polars/duckdb are faster for large files; optional dependencies)",
     )
     check_parser.add_argument("--plugins", default=None, help="Comma-separated plugin names or dotted module paths")
     check_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON to stdout")

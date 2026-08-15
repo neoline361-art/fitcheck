@@ -99,6 +99,28 @@ def test_check_backend_polars_path(tmp_path: Path) -> None:
     assert result["total_rows"] == 3
 
 
+def test_get_backend_duckdb_selection(tmp_path: Path) -> None:
+    """Explicit duckdb request returns the duckdb backend and reads CSV files."""
+    from fitcheck.backends import get_backend
+
+    pytest.importorskip("duckdb")
+    backend = get_backend("duckdb")
+    assert backend.name == "duckdb"
+    path = tmp_path / "data.csv"
+    pd.DataFrame({"a": [1, 2, 3]}).to_csv(path, index=False)
+    frame = backend.read(path.as_posix())
+    assert len(backend.to_pandas(frame)) == 3
+
+
+def test_check_backend_duckdb_path(tmp_path: Path) -> None:
+    """End-to-end: the duckdb backend loads a file and the check engine runs on pandas."""
+    pytest.importorskip("duckdb")
+    path = tmp_path / "data.csv"
+    pd.DataFrame({"a": [1, 2, 3]}).to_csv(path, index=False)
+    result = check(path.as_posix(), output=str(tmp_path / "c.html"), return_format="dict", backend="duckdb")
+    assert result["total_rows"] == 3
+
+
 def test_plotly_renderer_requires_package() -> None:
     from fitcheck.viz import get_renderer
 

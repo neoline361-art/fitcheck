@@ -36,7 +36,7 @@ def check(
         plugins: Optional custom check functions returning issue dictionaries.
         time_column: Optional timestamp column for basic time-series validation.
         sample_rows: Optional number of CSV rows to inspect instead of loading the full file.
-        backend: Data loading backend: "pandas" (default) or "polars" (optional dependency).
+        backend: Data loading backend: "pandas" (default), "polars", or "duckdb" (both optional dependencies).
 
     Returns:
         Issues found in the dataset. Format depends on return_format.
@@ -134,11 +134,12 @@ def _load_data(
         return data.copy()
     if not os.path.exists(data):
         raise FileNotFoundError(f"Data file not found: {data}")
-    if backend == "polars":
+    if backend in ("polars", "duckdb"):
         from fitcheck.backends import get_backend
 
-        frame = get_backend("polars").read(data)
-        df = frame.to_pandas()
+        backend_obj = get_backend(backend)
+        frame = backend_obj.read(data)
+        df = backend_obj.to_pandas(frame)
         return df.head(sample_rows) if sample_rows is not None else df
     if data.endswith(".parquet"):
         return pd.read_parquet(data)

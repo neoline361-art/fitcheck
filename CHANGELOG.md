@@ -2,6 +2,11 @@
 
 All notable changes to FitCheck are documented here.
 
+## [Unreleased]
+
+### Added
+- Optional duckdb loading backend: `fitcheck check big.parquet --backend duckdb` (`pip install data-fitcheck[duckdb]`) — accelerated CSV/Parquet loading for large files.
+
 ## [3.1.3] - 2026-08-15
 
 ### Changed

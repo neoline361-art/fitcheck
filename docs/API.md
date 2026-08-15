@@ -31,9 +31,9 @@ result = fitcheck.check(
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `backend` | `str` | `pandas` | `pandas` (default) or `polars` (optional dependency; faster loading of large CSV/Parquet files). |
+| `backend` | `str` | `pandas` | `pandas` (default), `polars`, or `duckdb` (both optional dependencies; faster loading of large CSV/Parquet files). |
 
-The polars backend accelerates the load step and converts frames to pandas for the check engine; polars-native checks are a future optimisation.
+The polars and duckdb backends accelerate the load step and convert frames to pandas for the check engine; backend-native checks are a future optimisation.
 
 ## `fitcheck.detect_seasonality(series, period=None)`
 
@@ -45,7 +45,7 @@ issue = fitcheck.detect_seasonality(df["sales"], period=7)
 
 ## `fitcheck.get_backend(name=None, df=None)`
 
-Return `PandasBackend` or `PolarsBackend` (auto-selected when `df` is already a polars frame).
+Return `PandasBackend`, `PolarsBackend`, or `DuckDBBackend` (auto-selected when `df` is already a polars frame).
 
 ## `fitcheck.get_renderer(name="static")`
 
@@ -100,6 +100,7 @@ drifted = sum(result["drifted"] for result in results)
 ```bash
 fitcheck check data.csv --target label
 fitcheck check big.parquet --backend polars          # optional fast loading
+fitcheck check big.parquet --backend duckdb           # optional out-of-core loading
 fitcheck report model.joblib X.npy y.npy --renderer plotly
 fitcheck demo --no-browser --output-dir ./demo
 fitcheck full data.csv --target label --model model.joblib --reference train.csv --output-dir reports

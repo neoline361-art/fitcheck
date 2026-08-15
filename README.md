@@ -42,7 +42,7 @@ Measured on this machine (Intel Core i5-6500, 8 GB RAM, Python 3.13, Parrot OS) 
 
 FitCheck is intentionally lightweight: it targets the common daily checks (missing values, duplicates, drift, model health) in seconds, not full production monitoring. For comprehensive statistical suites and richer monitoring, [Evidently](https://github.com/evidentlyai/evidently) and [Deepchecks](https://github.com/deepchecks/deepchecks) are excellent tools — FitCheck is the fast pre-flight check you run before every training run.
 
-Both backends produce identical diagnostics. The optional polars backend (`--backend polars`) is fastest on large files — it loads and converts to pandas for analysis, so the speedup grows with the cost of CSV/Parquet loading.
+All backends produce identical diagnostics. The optional polars (`--backend polars`) and duckdb (`--backend duckdb`) backends accelerate CSV/Parquet loading for large files — they load and convert to pandas for analysis, so the speedup grows with the cost of CSV/Parquet loading. duckdb's auto type-inference is stricter than pandas, so the default pandas backend remains the safe choice for messy CSVs.
 
 ## Installation
 
@@ -145,6 +145,7 @@ fitcheck check data1.csv data2.csv            # multi-file check
 fitcheck check data.csv --missing-warning 0.10 --missing-critical 0.30
 fitcheck check data.csv --time-column timestamp --plugins my_checks
 fitcheck check big.parquet --backend polars        # optional fast loading backend
+fitcheck check big.parquet --backend duckdb         # optional out-of-core loading backend
 fitcheck report model.joblib X_test.npy y_test.npy --renderer plotly
 fitcheck drift train.csv production.csv --method psi
 fitcheck full data.csv --target label --model model.joblib --reference train.csv
