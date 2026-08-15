@@ -12,6 +12,7 @@ namespace and renders the report inline.
 
 from __future__ import annotations
 
+import importlib
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -22,13 +23,21 @@ import pandas as pd
 from fitcheck.check import check
 
 
+def _ipython_module(name: str) -> Any:
+    """Import an IPython submodule lazily.
+
+    IPython ships no type stubs, so the module is exposed as ``Any`` to keep
+    mypy strict happy whether IPython is installed (with or without stubs) or
+    absent entirely.
+    """
+    return importlib.import_module(name)
+
+
 def _user_ns() -> dict[str, Any]:
     """Return the active notebook namespace, falling back to globals()."""
     ipython: Any = None
     try:
-        from IPython import get_ipython  # type: ignore[attr-defined]
-
-        ipython = get_ipython()
+        ipython = _ipython_module("IPython").get_ipython()
     except Exception:  # pragma: no cover - defensive, IPython unavailable
         ipython = None
     if ipython is not None:
@@ -68,9 +77,8 @@ def _render_inline(df: pd.DataFrame, target: str | None, display_fn: Callable[[A
     with tempfile.TemporaryDirectory() as tmp_dir:
         report_path = Path(tmp_dir) / "fitcheck_report.html"
         check(df, target=target, output=str(report_path))
-        from IPython.display import HTML
-
-        display_fn(HTML(report_path.read_text(encoding="utf-8")))  # type: ignore[no-untyped-call]
+        html = _ipython_module("IPython.display").HTML(report_path.read_text(encoding="utf-8"))
+        display_fn(html)
 
 
 def run_fitcheck_line(line: str, ns: dict[str, Any] | None = None) -> None:
@@ -92,9 +100,7 @@ def run_fitcheck_cell(line: str, cell: str, ns: dict[str, Any] | None = None) ->
 def _display_or_print(html: Any) -> None:
     """Display inline when IPython is present, otherwise print a note."""
     try:
-        from IPython.display import display
-
-        display(html)  # type: ignore[no-untyped-call]
+        _ipython_module("IPython.display").display(html)
     except Exception:  # pragma: no cover - plain Python session
         print("FitCheck report generated; install IPython to render inline.")
 
