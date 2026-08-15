@@ -32,7 +32,7 @@ jobs:
         # Requires a PyPI "trusted publisher" environment configured in repo settings.
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Sign with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3
+        uses: sigstore/gh-action-sigstore-python@v3.5.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
       - name: Generate CycloneDX SBOM
