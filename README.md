@@ -38,7 +38,9 @@ Measured on this machine (Intel Core i5-6500, 8 GB RAM, Python 3.13, Parrot OS) 
   <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/charts/fitcheck_benchmark_comparison.png" width="85%" alt="Benchmark comparison and feature scorecard">
 </p>
 
-*Evidently and Deepchecks timings in the chart are community-reported estimates, not measured here — only the FitCheck numbers are measured.*
+*Evidently and Deepchecks timings in the chart are community-reported estimates, not measured here — only the FitCheck numbers are measured. The feature-scorecard values are subjective availability scores; those tools offer deeper production-monitoring features.*
+
+FitCheck is intentionally lightweight: it targets the common daily checks (missing values, duplicates, drift, model health) in seconds, not full production monitoring. For comprehensive statistical suites and richer monitoring, [Evidently](https://github.com/evidentlyai/evidently) and [Deepchecks](https://github.com/deepchecks/deepchecks) are excellent tools — FitCheck is the fast pre-flight check you run before every training run.
 
 Both backends produce identical diagnostics. The optional polars backend (`--backend polars`) is fastest on large files — it loads and converts to pandas for analysis, so the speedup grows with the cost of CSV/Parquet loading.
 
