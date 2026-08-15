@@ -2,6 +2,12 @@
 
 All notable changes to FitCheck are documented here.
 
+## [3.1.3] - 2026-08-15
+
+### Changed
+- README now shows a one-pager overview, real measured benchmarks (competitor timings explicitly labeled as estimates), a feature comparison table, and a compact screenshot gallery; image links use raw.githubusercontent.com so they also render on PyPI.
+- Benchmarks section adds honest positioning: FitCheck is intentionally lightweight and targets common daily checks, not full production monitoring; Evidently and Deepchecks remain the choice for comprehensive suites.
+
 ## [3.1.2] - 2026-08-15
 
 ### Fixed
