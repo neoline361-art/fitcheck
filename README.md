@@ -7,6 +7,10 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-80%20passing-brightgreen" alt="Tests"></a>
 </p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/fitcheck_one_pager.png" width="85%" alt="FitCheck overview">
+</p>
+
 FitCheck is a local-first toolkit for answering three questions quickly: **Is this dataset healthy? Is this model behaving? Has production data changed?** Every workflow produces a self-contained HTML report that can be opened locally and shared in a pull request, Slack, or an incident review.
 
 ## Why FitCheck
@@ -29,6 +33,12 @@ Measured on this machine (Intel Core i5-6500, 8 GB RAM, Python 3.13, Parrot OS) 
 |---|---|---|
 | 100k rows | 2.32 s | 1.97 s |
 | 1M rows | 2.93 s | 2.60 s |
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/charts/fitcheck_benchmark_comparison.png" width="85%" alt="Benchmark comparison and feature scorecard">
+</p>
+
+*Evidently and Deepchecks timings in the chart are community-reported estimates, not measured here — only the FitCheck numbers are measured.*
 
 Both backends produce identical diagnostics. The optional polars backend (`--backend polars`) is fastest on large files — it loads and converts to pandas for analysis, so the speedup grows with the cost of CSV/Parquet loading.
 
@@ -100,17 +110,13 @@ For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger 
 
 ## Screenshots
 
-### Terminal Output
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-check.png" width="32%" alt="Terminal check output">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/html-report.png" width="32%" alt="Interactive HTML report">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/demo-output.png" width="32%" alt="One-command demo">
+</p>
 
-![Terminal check output](assets/screenshots/terminal-check.png)
-
-### Self-contained HTML report
-
-![HTML report](assets/screenshots/html-report.png)
-
-### One-command demo
-
-![Demo output](assets/screenshots/demo-output.png)
+Terminal check output (left), the interactive Plotly model report (center), and the one-command demo (right).
 
 ## Feature comparison
 
