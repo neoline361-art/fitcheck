@@ -61,6 +61,7 @@ dev = [
     "pip-audit>=2.7.0",
     "pre-commit>=3.5.0",
     "ipython>=8.12.0",
+    "mutmut>=3.0.0",
     "plotly>=5.18.0",
     "polars>=0.20.0",
     "pyarrow>=14.0.0",
@@ -131,6 +132,11 @@ disallow_untyped_defs = true
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
 skips = ["B101", "B311"]
+
+[tool.mutmut]
+source_paths = ["fitcheck/"]  # mutmut 3.x renamed paths_to_mutate -> source_paths
+pytest_add_cli_args = ["-q", "--no-cov"]  # --no-cov avoids double instrumentation (addopts force --cov)
+pytest_add_cli_args_test_selection = ["tests/"]  # replaces the deprecated tests_dir key
 
 [tool.coverage.run]
 source = ["fitcheck"]
