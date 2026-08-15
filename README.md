@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-65%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-80%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 FitCheck is a local-first toolkit for answering three questions quickly: **Is this dataset healthy? Is this model behaving? Has production data changed?** Every workflow produces a self-contained HTML report that can be opened locally and shared in a pull request, Slack, or an incident review.
@@ -20,6 +20,17 @@ FitCheck is intentionally opinionated. It is zero-config for the common path, ne
 | Local and private | Reports and statistical calculations run locally. |
 | Progressive disclosure | The simple API remains small while full workflows expose deeper diagnostics. |
 | Shareable output | Reports are standalone HTML with responsive styling and embedded plots. |
+
+## Benchmarks
+
+Measured on this machine (Intel Core i5-6500, 8 GB RAM, Python 3.13, Parrot OS) with `fitcheck check --quiet`; best of two wall-clock runs. Your hardware will differ.
+
+| Dataset size | pandas backend | polars backend |
+|---|---|---|
+| 100k rows | 2.32 s | 1.97 s |
+| 1M rows | 2.93 s | 2.60 s |
+
+Both backends produce identical diagnostics. The optional polars backend (`--backend polars`) is fastest on large files — it loads and converts to pandas for analysis, so the speedup grows with the cost of CSV/Parquet loading.
 
 ## Installation
 
@@ -86,6 +97,37 @@ fitcheck.check(
 | Integrations | Optional MLflow logging and DVC metrics callbacks (`log_to_mlflow`, `log_to_dvc`) |
 
 For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger numeric samples. Use `method="wasserstein"` when a normalized distribution-distance signal is more useful than a hypothesis test.
+
+## Screenshots
+
+### Terminal Output
+
+![Terminal check output](assets/screenshots/terminal-check.png)
+
+### Self-contained HTML report
+
+![HTML report](assets/screenshots/html-report.png)
+
+### One-command demo
+
+![Demo output](assets/screenshots/demo-output.png)
+
+## Feature comparison
+
+| Capability | FitCheck | Evidently | Deepchecks | Pandera |
+|---|---|---|---|---|
+| Data quality checks (missing, duplicates, constants, outliers) | ✅ | ✅ | ✅ | ✅ |
+| Model evaluation (classification/regression) | ✅ | ✅ | ✅ | — |
+| Drift detection (KS/PSI, categorical) | ✅ | ✅ | ✅ | — |
+| CI-native CLI with exit codes (`--json`, `--fail-on`) | ✅ | ✅ | ✅ | ⚠️ |
+| Plugin / custom check registry | ✅ | ✅ | ✅ | ✅ |
+| Jupyter integration | ✅ | ✅ | ✅ | ✅ |
+| Interactive HTML reports | ✅ | ✅ | ✅ | ⚠️ |
+| DataFrame schema validation | ⚠️ | ⚠️ | ⚠️ | ✅ |
+| Local-first, no telemetry, no hosted service | ✅ | ⚠️ | ⚠️ | ✅ |
+| One-command `full` workflow (data + model + drift) | ✅ | — | — | — |
+
+✅ = supported; ⚠️ = partial or via add-on; — = not a core feature. FitCheck's rows reflect the verified contents of this repository. Competitor rows are based on public documentation and may change — verify before making procurement decisions.
 
 ## CLI commands
 
@@ -161,7 +203,7 @@ bandit -r fitcheck/ -x tests
 pytest --cov=fitcheck --cov-report=term-missing
 ```
 
-The current repository suite contains **70+ passing tests** and reports approximately **95% total coverage** on the supported Python environment.
+The current repository suite contains **80+ passing tests** and reports approximately **92% total coverage** on the supported Python environment.
 
 ## Large CSVs and contact data
 
