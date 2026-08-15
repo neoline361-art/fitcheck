@@ -2,10 +2,15 @@
 
 All notable changes to FitCheck are documented here.
 
+## [3.1.2] - 2026-08-15
+
+### Fixed
+- Release workflow SBOM step: `cyclonedx-py environment --outfile` is invalid in cyclonedx-bom 7.x — corrected to `-o` so the release pipeline (publish, Sigstore, SBOM, GitHub release) completes green.
+
 ## [3.1.1] - 2026-08-15
 
 ### Fixed
-- Release pipeline artifact generation: Sigstore signing, CycloneDX SBOM, and GitHub release assets. v3.1.0 published to PyPI but the workflow stopped at the SBOM step, so 3.1.1 re-releases through the complete signed pipeline.
+- Release pipeline artifact generation: Sigstore signing, CycloneDX SBOM, and GitHub release assets. v3.1.0 published to PyPI but the workflow stopped at the SBOM step; 3.1.1's run then succeeded at publish and Sigstore but hit the same SBOM failure — fully resolved in 3.1.2 with the corrected CLI flag.
 
 ## [3.1.0] - 2026-08-15
 
