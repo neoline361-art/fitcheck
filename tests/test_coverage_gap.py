@@ -14,8 +14,8 @@ try:
 except ImportError:
     HAVE_PYARROW = False
 
-from fitcheck.extensions import validate_timeseries
 from fitcheck.backends import get_backend
+from fitcheck.extensions import validate_timeseries
 
 
 @pytest.fixture
