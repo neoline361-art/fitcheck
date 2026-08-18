@@ -33,7 +33,7 @@ def test_backend_duckdb_falls_back_to_error_message() -> None:
 
 def test_backend_polars_path_round_trip(tmp_path: Path) -> None:
     """Polars backend must round-trip a CSV identically to pandas loading."""
-    pl = pytest.importorskip("polars")
+    pytest.importorskip("polars")
     from fitcheck.backends import get_backend
 
     path = tmp_path / "t.csv"
@@ -78,8 +78,6 @@ def test_viz_unknown_renderer_falls_back_to_static() -> None:
 def test_plotly_renderer_unavailable_falls_back_to_static() -> None:
     """When plotly is absent, the engine must render static plots instead of crashing."""
     import sys
-
-    from fitcheck.html import _plotly_js
 
     # Vendored JS embeds regardless, but a missing plotly package must never
     # raise at import time; the viz module imports plotly lazily.
@@ -141,8 +139,9 @@ def test_shap_missing_leaves_importance_out() -> None:
     """Non-tree models without shap must skip importance, never raise."""
     import sys
 
-    from fitcheck.report import report
     from sklearn.linear_model import LogisticRegression
+
+    from fitcheck.report import report
 
     removed = sys.modules.pop("shap", None)
     try:
