@@ -5,7 +5,18 @@ All notable changes to FitCheck are documented here.
 ## [Unreleased]
 
 ### Added
-- Optional duckdb loading backend: `fitcheck check big.parquet --backend duckdb` (`pip install data-fitcheck[duckdb]`) — accelerated CSV/Parquet loading for large files.
+- `fitcheck doctor`: environment health diagnosis for required packages, versions, backends, and renderers; never runs automatically from `check`; `--json` output and exit code 0/2. (`make doctor`)
+- Auto-fix quality suite: generated scripts verified for syntax, execution, exit code, output content, original-data preservation, and post-fix revalidation across missing-values, duplicates, constant-column, high-cardinality, and text-skew datasets.
+- Edge-case hardening: robust behavior for empty inputs, single-row inputs, all-NaN columns, constant columns, one-class targets, missing or empty target columns, object-dtype and pyarrow StringDtype columns, and surrogate characters.
+- Reproducible benchmark runner (`benchmarks/run.py`, `make benchmark`): three warm-up runs plus ten timed repetitions with median/min/max reporting, shared deterministic datasets, and full environment recording; competitor timings appear only when measured locally on identical hardware.
+### Changed
+- Missing or empty target columns now fail fast with a clear, actionable `ValueError` instead of silently skipping the model workflow.
+- High-cardinality detection now covers pyarrow-backed StringDtype columns.
+- Pre-commit mypy hook drops the retired `numpy-stubs` package; verified installing in a clean repository.
+- Report data preview collapses into a native `<details>` section; report CSS gained a narrow-viewport (≤640px) responsive rule.
+### Testing
+- Core mutation testing on `fitcheck/check.py` (`mutmut`, configured in `pyproject.toml`) drives test quality beyond line coverage.
+- Optional-dependency behavior is tested in both installed and unavailable states.
 
 ## [3.1.3] - 2026-08-15
 
