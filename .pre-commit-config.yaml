@@ -9,7 +9,7 @@ repos:
     rev: v1.11.0
     hooks:
       - id: mypy
-        additional_dependencies: [pandas-stubs, numpy-stubs]
+        additional_dependencies: [pandas-stubs, numpy]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
