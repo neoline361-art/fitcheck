@@ -123,6 +123,21 @@ check("data.csv", plugins=[load_plugin("my_pkg.my_checks")])
 
 `fitcheck check` returns `0` (pass), `1` (warnings), `2` (critical), or `3` (runtime error). `--fail-on` sets the minimum severity that fails the run; `--json` emits results to stdout; `--quiet` suppresses everything except JSON and the exit code.
 
+## Environment diagnosis (`fitcheck doctor`)
+`fitcheck doctor` diagnoses the local environment without running any data checks, and is never invoked automatically by `check`. It verifies the Python version, required packages and their versions, optional backends and renderers, and the availability of quality tools. It is the recommended first step when FitCheck reports missing imports or unexpected behavior in a new environment.
+
+```python
+from fitcheck.doctor import run_doctor_checks, format_doctor_report, exit_code_for
+
+checks = run_doctor_checks()                # list of DoctorCheck (name, status, message)
+print(format_doctor_report(checks))         # human-readable report
+code = exit_code_for(checks)                # 0 healthy, 2 required package/version problem
+```
+
+| CLI form | Behavior |
+|---|---|
+| `fitcheck doctor` | Human-readable report, exits 0 (healthy) or 2 (required problem) |
+| `fitcheck doctor --json` | Machine-readable JSON report |
 ## Jupyter
 
 ```bash
