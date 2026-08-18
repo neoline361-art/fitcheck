@@ -9,6 +9,12 @@ import pytest
 
 from fitcheck.backends.pandas_backend import PandasBackend
 
+try:
+    import openpyxl  # noqa: F401
+    HAVE_OPENPYXL = True
+except ImportError:
+    HAVE_OPENPYXL = False
+
 
 @pytest.fixture
 def backend() -> PandasBackend:
@@ -37,6 +43,7 @@ def test_read_json_branch(backend: PandasBackend, tmp_path: Path) -> None:
     assert list(frame["k"]) == [1, 2]
 
 
+@pytest.mark.skipif(not HAVE_OPENPYXL, reason="openpyxl is an optional dependency")
 def test_read_excel_branch(backend: PandasBackend, tmp_path: Path) -> None:
     excel = tmp_path / "data.xlsx"
     pd.DataFrame({"y": [5, 6]}).to_excel(excel, index=False)
