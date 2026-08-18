@@ -138,7 +138,7 @@ exclude_dirs = ["tests", ".venv"]
 skips = ["B101", "B311"]
 
 [tool.mutmut]
-source_paths = ["fitcheck/"]  # mutmut 3.x renamed paths_to_mutate -> source_paths
+source_paths = ["fitcheck/check.py"]  # core check engine; the PRD's core-module mutation target
 pytest_add_cli_args = ["-q", "--no-cov"]  # --no-cov avoids double instrumentation (addopts force --cov)
 pytest_add_cli_args_test_selection = ["tests/"]  # replaces the deprecated tests_dir key
 

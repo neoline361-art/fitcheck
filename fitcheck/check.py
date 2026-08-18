@@ -49,6 +49,8 @@ def check(
         raise ValueError("sample_rows must be a positive integer")
     df = _load_data(data, sample_rows=sample_rows, backend=backend)
     input_path = data if isinstance(data, str) else "dataframe_input"
+    if target and target not in df.columns:
+        raise ValueError(f'Target column "{target}" not found in columns: {list(df.columns)}')
 
     thresholds: dict[str, float] = {
         "missing_critical": 0.20,
@@ -197,13 +199,16 @@ def _detect_constants(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Detect columns with a single unique value."""
     issues = []
     for col in df.columns:
-        if df[col].nunique(dropna=False) == 1:
+        series = df[col].dropna()
+        if len(series) == 0:
+            continue  # fully missing columns are covered by missing-values detection
+        if series.nunique() == 1:
             issues.append(
                 {
                     "column": col,
                     "type": "constant_column",
                     "severity": "warning",
-                    "message": f'{col}: constant value "{df[col].iloc[0]}" (zero variance)',
+                    "message": f'{col}: constant value "{series.iloc[0]}" (zero variance)',
                     "suggestion": f'Drop constant column "{col}" — provides no information',
                 }
             )
@@ -277,6 +282,11 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
             pd.api.types.is_object_dtype(dtype)
             or isinstance(dtype, pd.CategoricalDtype)
             or pd.api.types.is_integer_dtype(dtype)
+            or (
+                hasattr(pd, "StringDtype")
+                and pd.api.types.is_string_dtype(dtype)
+                and not pd.api.types.is_object_dtype(dtype)
+            )
         ):
             continue
         non_null = df[col].dropna()
@@ -322,12 +332,25 @@ def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
     return issues
 
 
+def _safe_lengths(series: pd.Series) -> pd.Series:
+    """Compute string lengths while normalizing lone surrogates safely.
+
+    Uses a pure-Python scalar map so no value ever passes through pyarrow
+    string conversion, which rejects lone surrogates at frame construction.
+    """
+    def _len(value: object) -> int:
+        text = str(value).encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+        return len(text)
+
+    return pd.Series([_len(v) for v in series], index=series.index, dtype="Int64")
+
+
 def _detect_text_length(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
     """Flag object columns whose string lengths are strongly skewed (mean >> median)."""
     issues = []
     multiplier = config["text_length_outlier_multiplier"]
     for col in df.select_dtypes(include=["object"]).columns:
-        lengths = df[col].dropna().astype(str).str.len()
+        lengths = _safe_lengths(df[col].dropna())
         if len(lengths) < 10:
             continue
         median = float(lengths.median())

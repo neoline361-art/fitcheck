@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-80%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-120%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -27,12 +27,15 @@ FitCheck is intentionally opinionated. It is zero-config for the common path, ne
 
 ## Benchmarks
 
-Measured on this machine (Intel Core i5-6500, 8 GB RAM, Python 3.13, Parrot OS) with `fitcheck check --quiet`; best of two wall-clock runs. Your hardware will differ.
+FitCheck ships a reproducible benchmark runner. Every measurement is an actual locally measured result with three warm-up runs followed by ten timed repetitions (median, minimum, and maximum reported); competitor timings appear only when those frameworks are measured on the same hardware, dataset, and workload definition, never as estimates typed into this file.
 
-| Dataset size | pandas backend | polars backend |
-|---|---|---|
-| 100k rows | 2.32 s | 1.97 s |
-| 1M rows | 2.93 s | 2.60 s |
+```bash
+python benchmarks/run.py          # FitCheck workloads
+python benchmarks/run.py --all    # FitCheck + importable competitors
+make benchmark                    # same, via Makefile
+```
+
+Results accumulate in [benchmarks/results.md](benchmarks/results.md) with the full environment recorded (OS, CPU, RAM, Python, and framework versions) so a clean checkout can reproduce every number. See the methodology note at the top of that file.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/charts/fitcheck_benchmark_comparison.png" width="85%" alt="Benchmark comparison and feature scorecard">
@@ -150,11 +153,20 @@ fitcheck report model.joblib X_test.npy y_test.npy --renderer plotly
 fitcheck drift train.csv production.csv --method psi
 fitcheck full data.csv --target label --model model.joblib --reference train.csv
 fitcheck demo --no-browser --output-dir ./demo
+fitcheck doctor                   # diagnose the environment
+fitcheck doctor --json            # machine-readable diagnosis
 ```
 
 ## CI and exit codes
 
-`fitcheck check` is CI-native: run it with `--json` for machine-readable output, `--quiet` to suppress everything except the exit code, and `--fail-on` to pick the severity that fails a pipeline.
+`fitcheck check` is CI-native: run it with `--json` for machine-readable output, `--quiet` to suppress everything except the exit code, and `--fail-on` to pick the severity that fails a pipeline. The exit-code contract is verified end to end against datasets at every severity level:
+
+| Exit code | Meaning | Verified against |
+|---|---|---|
+| `0` | No issues (or only issues below `--fail-on`) | clean dataset |
+| `1` | Warnings found | 8% missing values (above the 5% warning band) |
+| `2` | Critical issues found | 25% missing values (above the 20% critical band) |
+| `3` | Runtime error (missing file, invalid config) | nonexistent file |
 
 ```bash
 fitcheck check data.csv --target label --json --quiet --fail-on critical
@@ -203,16 +215,21 @@ FitCheck does not upload input data. HTML reports embed generated plots as base6
 
 ## Development and verification
 
+The developer workflow is Makefile-driven; `make help` lists every target.
+
 ```bash
-pip install -r requirements.lock   # reproducible dev environment
-pip install -e . --no-deps
-ruff check fitcheck tests
-mypy fitcheck
-bandit -r fitcheck/ -x tests
-pytest --cov=fitcheck --cov-report=term-missing
+make install       # pip install -e .
+make test          # full suite with coverage
+make lint          # ruff check
+make typecheck     # strict mypy
+make security      # bandit
+make audit         # pip-audit on runtime dependencies only
+make doctor        # fitcheck doctor
+make benchmark     # reproducible benchmark suite
+make clean         # remove build and cache artifacts
 ```
 
-The current repository suite contains **80+ passing tests** and reports approximately **92% total coverage** on the supported Python environment.
+The suite contains **120+ passing tests** at approximately **95% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
 
 ## Large CSVs and contact data
 

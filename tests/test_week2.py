@@ -15,7 +15,12 @@ from fitcheck.report import report
 
 
 def test_text_encoding_check_detected(tmp_path: Path) -> None:
-    data = pd.DataFrame({"clean": ["ok", "fine"], "bad": ["a", "b\udcffc"]})  # lone surrogate
+    # A lone surrogate survives lossy decodes of mixed-encoding CSV bytes.
+    # object dtype is used because pyarrow string dtype rejects surrogates
+    # at frame construction time, before any check can run.
+    data = pd.DataFrame(
+        {"clean": ["ok", "fine"], "bad": pd.Series(["a", "b\udcffc"], dtype=object)}
+    )
     result = check(data, output=str(tmp_path / "enc.html"), return_format="dict")
     assert any(issue["type"] == "text_encoding" and issue["column"] == "bad" for issue in result["issues"])
 
