@@ -35,6 +35,8 @@ class FixScriptGenerator:
         """Generate the complete Python fix script as a string."""
         lines: list[str] = []
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if not Path(output_path).is_absolute():
+            output_path = str(Path(input_path).parent / output_path)
 
         lines.append('"""Auto-generated FitCheck Fix Script')
         lines.append("")
@@ -206,6 +208,20 @@ def _to_action(issue: dict[str, Any]) -> FixAction | None:
                 f"    print(f'  Capped outliers in {col}')"
             ),
             rationale=f"IQR capping reduces extreme values in {col}",
+        )
+    elif itype == "high_cardinality":
+        return FixAction(
+            column=col,
+            issue_type="high_cardinality",
+            severity=sev,
+            description=msg,
+            code=(
+                f"if '{col}' in df.columns:\n"
+                f"    # Hash-group high-cardinality values to reduce cardinality.\n"
+                f"    df['{col}'] = df['{col}'].astype(str).str[:3]\n"
+                f"    print(f'  Hash-grouped {col} to its first 3 characters')"
+            ),
+            rationale=f"Hash grouping reduces cardinality in ID-like column {col} while preserving partial linkage",
         )
     elif itype == "class_imbalance":
         return FixAction(
