@@ -322,12 +322,25 @@ def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
     return issues
 
 
+def _safe_lengths(series: pd.Series) -> pd.Series:
+    """Compute string lengths while normalizing lone surrogates safely.
+
+    Uses a pure-Python scalar map so no value ever passes through pyarrow
+    string conversion, which rejects lone surrogates at frame construction.
+    """
+    def _len(value: object) -> int:
+        text = str(value).encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+        return len(text)
+
+    return pd.Series([_len(v) for v in series], index=series.index, dtype="Int64")
+
+
 def _detect_text_length(df: pd.DataFrame, config: dict[str, float]) -> list[dict[str, Any]]:
     """Flag object columns whose string lengths are strongly skewed (mean >> median)."""
     issues = []
     multiplier = config["text_length_outlier_multiplier"]
     for col in df.select_dtypes(include=["object"]).columns:
-        lengths = df[col].dropna().astype(str).str.len()
+        lengths = _safe_lengths(df[col].dropna())
         if len(lengths) < 10:
             continue
         median = float(lengths.median())
