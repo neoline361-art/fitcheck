@@ -239,7 +239,7 @@ def test_magic_entry_points_smoke() -> None:
     from fitcheck.magic import _user_ns, run_fitcheck_cell, run_fitcheck_line
 
     assert isinstance(_user_ns(), dict)
-    ns = {"df": pd.DataFrame({"a": [1, 2, 3]})}
+    ns = {"df": pd.DataFrame({"a": [1, 2, 3], "label": [0, 1, 0]})}
     run_fitcheck_line("df", ns=ns)
     run_fitcheck_cell("--target label", "", ns=ns)
     with pytest.raises(NameError):

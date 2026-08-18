@@ -49,6 +49,8 @@ def check(
         raise ValueError("sample_rows must be a positive integer")
     df = _load_data(data, sample_rows=sample_rows, backend=backend)
     input_path = data if isinstance(data, str) else "dataframe_input"
+    if target and target not in df.columns:
+        raise ValueError(f'Target column "{target}" not found in columns: {list(df.columns)}')
 
     thresholds: dict[str, float] = {
         "missing_critical": 0.20,
@@ -197,13 +199,16 @@ def _detect_constants(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Detect columns with a single unique value."""
     issues = []
     for col in df.columns:
-        if df[col].nunique(dropna=False) == 1:
+        series = df[col].dropna()
+        if len(series) == 0:
+            continue  # fully missing columns are covered by missing-values detection
+        if series.nunique() == 1:
             issues.append(
                 {
                     "column": col,
                     "type": "constant_column",
                     "severity": "warning",
-                    "message": f'{col}: constant value "{df[col].iloc[0]}" (zero variance)',
+                    "message": f'{col}: constant value "{series.iloc[0]}" (zero variance)',
                     "suggestion": f'Drop constant column "{col}" — provides no information',
                 }
             )
@@ -277,6 +282,11 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
             pd.api.types.is_object_dtype(dtype)
             or isinstance(dtype, pd.CategoricalDtype)
             or pd.api.types.is_integer_dtype(dtype)
+            or (
+                hasattr(pd, "StringDtype")
+                and pd.api.types.is_string_dtype(dtype)
+                and not pd.api.types.is_object_dtype(dtype)
+            )
         ):
             continue
         non_null = df[col].dropna()
