@@ -44,7 +44,13 @@ audit: ## Audit runtime dependencies for known vulnerabilities
 doctor: ## Diagnose the FitCheck environment
 	fitcheck doctor
 
-bench: ## Run the benchmark suite and append results
+benchmark: ## Run the reproducible benchmark suite and append results
+	$(PYTHON) benchmarks/run.py
+
+bench: ## Alias for the reproducible benchmark suite
+	$(MAKE) benchmark
+
+bench-only: ## Legacy bench target
 	$(PYTHON) benchmarks/run.py
 
 bench-smoke: ## Quick one-million-row contact smoke test
