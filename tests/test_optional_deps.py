@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Backend selection degrades gracefully when the optional loader is missing
 # ---------------------------------------------------------------------------
