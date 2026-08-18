@@ -106,6 +106,10 @@ def main(argv: list[str] | None = None) -> int:
     demo_parser.add_argument("--no-browser", action="store_true", help="Skip opening the browser")
     demo_parser.add_argument("--output-dir", default=None, help="Directory for generated reports")
 
+    # doctor command
+    doctor_parser = subparsers.add_parser("doctor", help="Diagnose the FitCheck environment")
+    doctor_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON to stdout")
+
     args = parser.parse_args(argv)
 
     try:
@@ -119,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_full(args)
         if args.command == "demo":
             return _run_demo(args)
+        if args.command == "doctor":
+            return _run_doctor(args)
     except (FileNotFoundError, ValueError, KeyError, NameError) as exc:
         print(f"fitcheck: error: {exc}", file=sys.stderr)
         return 3
@@ -282,6 +288,22 @@ def _load_array(path: str) -> NDArray[Any]:
 
     df = pd.read_csv(path)
     return np.asarray(df.values)
+
+
+def _run_doctor(args: Any) -> int:
+    """Run environment self-diagnosis and print the report."""
+    from fitcheck.doctor import exit_code_for, format_doctor_report, run_doctor_checks
+
+    checks = run_doctor_checks()
+    if args.json:
+        payload = [
+            {"name": c.name, "status": c.status, "detail": c.detail}
+            for c in checks
+        ]
+        print(json.dumps(payload, indent=2))
+        return 2 if exit_code_for(checks) else 0
+    print(format_doctor_report(checks))
+    return exit_code_for(checks)
 
 
 def _run_demo(args: Any) -> int:
