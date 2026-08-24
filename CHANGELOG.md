@@ -2,9 +2,23 @@
 
 All notable changes to FitCheck are documented here.
 
-## [Unreleased]
+## [3.3.0] - 2026-08-24
 
-(No unreleased changes.)
+### Added
+- Premium report rendering: critical issues displayed first with prominent styling; warnings and info collapsed into a collapsible `<details>` section for cleaner scanning.
+- Copyable fix snippets: each issue with an auto-fix gets an inline code block with a one-click copy button (vanilla JS, no dependencies).
+- `test_week3.py` comprehensive polish test suite: demo severity verification, auto-fix script execution on dirty datasets, report structure assertions, edge-case hardening, backend hardening, and viz boundary tests.
+
+### Changed
+- `fitcheck demo` dataset redesigned to trigger every severity level: income 25% missing (critical), age 8% missing (warning), constant column (warning), 80% class imbalance (warning), score outliers (info), duplicates (info).
+- Auto-fix generated scripts now include `df = df.copy()` safety line and a validation block that verifies each claimed fix actually landed (duplicates removed, imputed columns null-free, constant columns dropped).
+- Missing-value imputation guarded with `pd.api.types.is_numeric_dtype` and `pd.notna(median_val)` to prevent crashes on all-NaN or object-dtype columns.
+- Unknown backend names now raise `ValueError` instead of silently falling back to pandas (affects `get_backend()`, `check()`, and `--backend` CLI flag).
+- Mobile-responsive report CSS: reports look professional on phones with adapted typography, grid columns, and padding.
+
+### Fixed
+- Dead `has_missing` variable removed from fix script generator (replaced with inline `if any(...)` guard).
+- Duplicate `get_backend()` call eliminated in `_load_data` — single call for all non-pandas backends.
 
 ## [3.2.0] - 2026-08-24
 

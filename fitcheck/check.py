@@ -136,10 +136,10 @@ def _load_data(
         return data.copy()
     if not os.path.exists(data):
         raise FileNotFoundError(f"Data file not found: {data}")
-    if backend in ("polars", "duckdb"):
+    if backend != "pandas":
         from fitcheck.backends import get_backend
 
-        backend_obj = get_backend(backend)
+        backend_obj = get_backend(backend)  # raises ValueError for unknown names
         frame = backend_obj.read(data)
         df = backend_obj.to_pandas(frame)
         return df.head(sample_rows) if sample_rows is not None else df

@@ -1,3 +1,5 @@
+"""HTML report renderers for FitCheck (dark-mode, responsive, self-contained)."""
+
 from __future__ import annotations
 
 from html import escape
@@ -7,8 +9,8 @@ import pandas as pd
 
 _DARK_CSS = """
 :root{--bg:#0b1020;--fg:#e6edf7;--muted:#91a0b8;--card:#121a2b;--card2:#182238;--border:#293754;--accent:#7dd3fc;--critical:#fb7185;--warning:#fbbf24;--info:#60a5fa;--pass:#4ade80}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b1020,#101a31);color:var(--fg);line-height:1.55}.container{max-width:1180px;margin:0 auto;padding:40px 22px}h1{font-size:2.35rem;letter-spacing:-.04em;margin:0 0 8px}h2{font-size:1.2rem;margin:30px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{margin-top:0}.subtitle{color:var(--muted);margin:0 0 24px}.card,.metric-card{background:rgba(18,26,43,.92);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.18)}.card{padding:20px;margin-bottom:20px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px}.metric-card{padding:16px;text-align:center}.metric-value{font-size:1.8rem;font-weight:750;color:var(--accent);word-break:break-word}.metric-label{font-size:.72rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em}.badge-critical{background:rgba(251,113,133,.14);color:var(--critical)}.badge-warning{background:rgba(251,191,36,.14);color:var(--warning)}.badge-info{background:rgba(96,165,250,.14);color:var(--info)}.badge-pass{background:rgba(74,222,128,.14);color:var(--pass)}.issue-list{list-style:none;padding:0}.issue-item{background:var(--card);border-left:4px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:12px}.issue-critical{border-left-color:var(--critical)}.issue-warning{border-left-color:var(--warning)}.issue-info{border-left-color:var(--info)}code{background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin-top:4px;display:block;overflow-x:auto}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}tr:hover{background:rgba(125,211,252,.05)}.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}.plot-img{max-width:100%;border-radius:9px;border:1px solid var(--border);margin-top:10px;background:#fff}.footer{text-align:center;margin-top:44px;color:var(--muted);font-size:.8rem}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.callout{border-left:4px solid var(--accent);padding:12px 16px;background:rgba(96,165,250,.08);border-radius:0 8px 8px 0}details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}summary{cursor:pointer;padding:12px 16px;font-weight:650;color:var(--fg);list-style:none;outline:none;user-select:none}summary::-webkit-details-marker{display:none}summary::after{content:"▼";float:right;font-size:.7rem;color:var(--muted);transition:transform .15s}details[open] summary::after{transform:rotate(180deg)}.detail-body{padding:4px 16px 16px}.recommendation{margin-top:8px;color:var(--muted);font-size:.85rem}
-@media (max-width:640px){.container{padding:16px 10px}h1{font-size:1.55rem}.metric-grid{grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px}.metric-value{font-size:1.35rem}.card{padding:14px}.issue-item{padding:10px 12px}th,td{padding:8px 7px;font-size:.82rem}.plot-grid{grid-template-columns:1fr}body{font-size:.92rem}}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b1020,#101a31);color:var(--fg);line-height:1.55}.container{max-width:1180px;margin:0 auto;padding:40px 22px}h1{font-size:2.35rem;letter-spacing:-.04em;margin:0 0 8px}h2{font-size:1.2rem;margin:30px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{margin-top:0}.subtitle{color:var(--muted);margin:0 0 24px}.card,.metric-card{background:rgba(18,26,43,.92);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.18)}.card{padding:20px;margin-bottom:20px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px}.metric-card{padding:16px;text-align:center}.metric-value{font-size:1.8rem;font-weight:750;color:var(--accent);word-break:break-word}.metric-label{font-size:.72rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em}.badge-critical{background:rgba(251,113,133,.14);color:var(--critical)}.badge-warning{background:rgba(251,191,36,.14);color:var(--warning)}.badge-info{background:rgba(96,165,250,.14);color:var(--info)}.badge-pass{background:rgba(74,222,128,.14);color:var(--pass)}.issue-list{list-style:none;padding:0}.issue-item{background:var(--card);border-left:4px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:12px}.issue-critical{border-left-color:var(--critical)}.issue-warning{border-left-color:var(--warning)}.issue-info{border-left-color:var(--info)}code{background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin-top:4px;display:block;overflow-x:auto}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}tr:hover{background:rgba(125,211,252,.05)}.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}.plot-img{max-width:100%;border-radius:9px;border:1px solid var(--border);margin-top:10px;background:#fff}.footer{text-align:center;margin-top:44px;color:var(--muted);font-size:.8rem}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.callout{border-left:4px solid var(--accent);padding:12px 16px;background:rgba(96,165,250,.08);border-radius:0 8px 8px 0}.fix-code{position:relative;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;overflow-x:auto;font-size:.82rem}.fix-code code{background:none;padding:0;color:var(--fg)}.copy-btn{position:absolute;top:8px;right:8px;background:rgba(125,211,252,.12);border:1px solid var(--border);color:var(--accent);border-radius:6px;padding:3px 10px;font-size:.7rem;cursor:pointer}.copy-btn:hover{background:rgba(125,211,252,.25)}.collapsible{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px}summary{cursor:pointer;font-weight:700;color:var(--accent)}
+@media(max-width:640px){.container{padding:24px 14px}h1{font-size:1.7rem}.metric-grid{grid-template-columns:repeat(2,1fr)}.plot-grid{grid-template-columns:1fr}.metric-value{font-size:1.4rem}.issue-item{padding:10px 12px}th,td{padding:8px 7px;font-size:.82rem}.card{padding:14px}body{font-size:.92rem}}
 """
 
 
@@ -36,18 +38,82 @@ def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: st
     status_class = "badge-pass" if not issues else "badge-warning"
     parts = [f'<h1>FitCheck Dataset Report</h1><p class="subtitle">A local, read-only health check with actionable next steps.</p><div class="card"><span class="badge {status_class}">{status}</span><div class="metric-grid" style="margin-top:16px">', _metric_card("Rows", len(df)), _metric_card("Columns", len(df.columns)), _metric_card("Critical", counts["critical"], "critical"), _metric_card("Warnings", counts["warning"], "warning"), _metric_card("Info", counts["info"], "info"), '</div></div>']
     if issues:
-        parts.append('<h2>Issues and recommendations</h2><ul class="issue-list">')
-        for issue in issues:
-            severity = str(issue.get("severity", "info"))
-            parts.append(f'<li class="issue-item issue-{escape(severity)}"><strong>{escape(str(issue.get("type", "")).replace("_", " ").title())}</strong> <span class="badge badge-{escape(severity)}">{escape(severity)}</span><br><code>{escape(str(issue.get("column", "")))}</code> — {escape(str(issue.get("message", "")))}<br><small>Recommendation: {escape(str(issue.get("suggestion", "")))}</small></li>')
-        parts.append("</ul>")
+        # Critical issues first so they scream; warnings and info collapse.
+        severity_order = {"critical": 0, "warning": 1, "info": 2}
+        ordered = sorted(issues, key=lambda i: severity_order.get(str(i.get("severity", "info")), 3))
+        critical = [i for i in ordered if i.get("severity") == "critical"]
+        remainder = [i for i in ordered if i.get("severity") != "critical"]
+        if critical:
+            parts.append('<h2>Critical issues</h2><ul class="issue-list">')
+            for idx, issue in enumerate(critical):
+                parts.append(_issue_item(issue, idx))
+            parts.append("</ul>")
+        if remainder:
+            summary = f"Warnings &amp; info ({len(remainder)})"
+            parts.append(f'<details class="collapsible" open><summary>{summary}</summary><ul class="issue-list" style="margin-top:12px">')
+            for idx, issue in enumerate(remainder, start=len(critical)):
+                parts.append(_issue_item(issue, idx))
+            parts.append("</ul></details>")
     else:
         parts.append('<div class="callout"><strong>No issues detected.</strong> The dataset passed every configured check.</div>')
     parts.append('<h2>Data preview</h2>')
     preview_html = df.head(10).to_html(index=False, classes="preview-table", escape=True)
     parts.append(f'<details><summary>First 10 rows of {len(df):,} total rows</summary><div class="detail-body">{preview_html}</div></details>')
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
+    parts.append(_copy_js())
     return _render(_base_html("FitCheck Dataset Report", "".join(parts)), output)
+
+
+def _issue_item(issue: dict[str, Any], idx: int) -> str:
+    """Render a single issue with a copyable fix snippet when available."""
+    severity = str(issue.get("severity", "info"))
+    type_label = escape(str(issue.get("type", "")).replace("_", " ").title())
+    column = escape(str(issue.get("column", "")))
+    message = escape(str(issue.get("message", "")))
+    suggestion = escape(str(issue.get("suggestion", "")))
+    item = (
+        f'<li class="issue-item issue-{escape(severity)}">'
+        f'<strong>{type_label}</strong> <span class="badge badge-{escape(severity)}">{escape(severity)}</span>'
+        f'<br><code>{column}</code> — {message}'
+        f'<br><small>Recommendation: {suggestion}</small>'
+    )
+    code = _fix_code(issue)
+    if code:
+        item += (
+            f'<pre class="fix-code" id="fix-{idx}"><code>{escape(code)}</code>'
+            f'<button class="copy-btn" data-target="fix-{idx}" type="button">Copy</button></pre>'
+        )
+    return item + "</li>"
+
+
+def _fix_code(issue: dict[str, Any]) -> str | None:
+    """Return the copyable fix snippet for an issue, if one exists."""
+    try:
+        from fitcheck.fix import _to_action
+
+        action = _to_action(issue)
+        if action and action.code:
+            return action.code
+    except ImportError:  # pragma: no cover - fix module is always present
+        return None
+    return None
+
+
+def _copy_js() -> str:
+    """Inline vanilla-JS copy buttons for fix snippets (no dependencies)."""
+    return (
+        "<script>"
+        "document.querySelectorAll('.copy-btn').forEach(function(b){"
+        "b.addEventListener('click',function(){"
+        "var pre=document.getElementById(b.getAttribute('data-target'));"
+        "var txt=pre.querySelector('code').textContent;"
+        "navigator.clipboard.writeText(txt).then(function(){"
+        "var old=b.textContent;b.textContent='Copied!';setTimeout(function(){b.textContent=old;},1200);"
+        "});"
+        "});"
+        "});"
+        "</script>"
+    )
 
 
 def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str, output: str | None, renderer: str = "static") -> str:

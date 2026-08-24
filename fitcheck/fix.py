@@ -76,8 +76,10 @@ class FixScriptGenerator:
         lines.append("def main() -> None:")
         lines.append("    print(f'Loading: {INPUT_PATH}')")
         lines.append("    df = load_data(INPUT_PATH)")
+        lines.append("    df = df.copy()  # safety: never mutate the loaded frame in place")
         lines.append("    print(f'Original: {len(df)} rows, {len(df.columns)} columns')")
         lines.append("    changes: list[str] = []")
+        lines.append("    imputed_columns: list[str] = []")
         lines.append("")
 
         for i, action in enumerate(self.actions, 1):
@@ -89,14 +91,29 @@ class FixScriptGenerator:
                 lines.append(f"    {code_line}")
             lines.append(f'    changes.append("{action.issue_type} on {action.column}")')
             lines.append("")
-
         lines.append("    # Summary")
         lines.append("    print('')")
         lines.append("    print('=== FitCheck Fix Summary ===')")
         lines.append("    print(f'Total changes: {len(changes)}')")
         lines.append("    for c in changes:")
         lines.append("        print(f'  - {c}')")
-        lines.append("    print(f'')")
+        lines.append("")
+        lines.append("    # Validation block: verify each claimed fix actually landed")
+        lines.append("    print('--- Validation ---')")
+        if any(a.issue_type == "missing_values" for a in self.actions):
+            lines.append("    for col in imputed_columns:")
+            lines.append("        assert df[col].isnull().sum() == 0, f'missing values remain in {col}'")
+            lines.append("        print(f'  {col} imputed: OK')")
+        for action in self.actions:
+            if action.issue_type == "duplicate_rows":
+                lines.append("    assert df.duplicated().sum() == 0, 'duplicate rows remain after drop_duplicates'")
+                lines.append("    print('  duplicates removed: OK')")
+            elif action.issue_type == "constant_column":
+                col = action.column
+                lines.append(f"    assert {col!r} not in df.columns, 'constant column {col} still present'")
+                lines.append(f"    print('  {col} dropped: OK')")
+        lines.append("    print(f'Validation passed: {len(df)} rows, {len(df.columns)} columns remain')")
+        lines.append("")
         lines.append("    print(f'Saving to: {OUTPUT_PATH}')")
         lines.append("    save_data(df, OUTPUT_PATH)")
         lines.append("")
@@ -157,12 +174,14 @@ def _to_action(issue: dict[str, Any]) -> FixAction | None:
             severity=sev,
             description=msg,
             code=(
-                f"if '{col}' in df.columns:\n"
+                f"if '{col}' in df.columns and pd.api.types.is_numeric_dtype(df['{col}']):\n"
                 f"    median_val = df['{col}'].median()\n"
-                f"    df['{col}'] = df['{col}'].fillna(median_val)\n"
-                f"    print(f'  Filled missing in {col} with median: {{median_val}}')"
+                f"    if pd.notna(median_val):\n"
+                f"        df['{col}'] = df['{col}'].fillna(median_val)\n"
+                f"        imputed_columns.append('{col}')\n"
+                f"        print(f'  Filled missing in {col} with median: {{median_val}}')"
             ),
-            rationale=f"Median imputation preserves distribution for {col}",
+            rationale=f"Median imputation preserves distribution for numeric column {col}",
         )
     elif itype == "duplicate_rows":
         return FixAction(

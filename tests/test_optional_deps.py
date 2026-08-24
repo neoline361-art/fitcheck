@@ -18,11 +18,12 @@ import pytest
 # Backend selection degrades gracefully when the optional loader is missing
 # ---------------------------------------------------------------------------
 
-def test_backend_unknown_name_falls_back_to_pandas() -> None:
-    """An unrecognized backend name must degrade gracefully to pandas loading."""
+def test_backend_unknown_name_raises_valueerror() -> None:
+    """An unrecognized backend name raises ValueError instead of silent fallback."""
     from fitcheck.backends import get_backend
 
-    assert get_backend("nonexistent_backend_xyz").name == "pandas"
+    with pytest.raises(ValueError, match="Unknown backend"):
+        get_backend("nonexistent_backend_xyz")
 
 
 def test_backend_duckdb_falls_back_to_error_message() -> None:
@@ -54,12 +55,14 @@ def test_backend_duckdb_path_round_trip(tmp_path: Path) -> None:
     assert len(backend.to_pandas(frame)) == 3
 
 
-def test_check_unknown_backend_falls_back_to_pandas() -> None:
-    """An unrecognized backend value degrades gracefully to pandas loading."""
+def test_check_unknown_backend_raises_valueerror(tmp_path: Path) -> None:
+    """An unrecognized backend value raises ValueError through check()."""
     from fitcheck.check import check
 
-    result = check(pd.DataFrame({"a": [1, 2, 3]}), backend="unknown", return_format="dict", output="/dev/null")
-    assert result["total_rows"] == 3
+    csv = tmp_path / "data.csv"
+    pd.DataFrame({"a": [1, 2, 3]}).to_csv(csv, index=False)
+    with pytest.raises(ValueError, match="Unknown backend"):
+        check(str(csv), backend="unknown", output=None)
 
 
 # ---------------------------------------------------------------------------

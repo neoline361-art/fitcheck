@@ -30,20 +30,25 @@ def run_demo(no_browser: bool = False, output_dir: str | None = None) -> None:
     print("FitCheck Demo")
     print("=" * 60)
 
-    # 1. Dataset with intentional issues
+    # 1. Dataset with intentional issues spanning every severity level:
+    #    critical  – income 25% missing (>=20% threshold)
+    #    warning   – age 8% missing (>=5%), constant column, 80% class imbalance
+    #    info      – duplicates, score outliers
     print("\n[1/3] Creating synthetic dataset with issues...")
     np.random.seed(42)
     n = 500
+    scores = np.random.normal(700, 100, n)
+    scores[:8] = 9999  # extreme outliers -> info
     df = pd.DataFrame(
         {
-            "age": np.concatenate([np.random.normal(35, 10, n - 20), [np.nan] * 20]),
-            "income": np.random.normal(50000, 15000, n),
-            "score": np.random.normal(700, 100, n),
-            "constant_col": [42] * n,  # constant column
-            "label": [0] * (n // 4 * 3) + [1] * (n // 4),  # 75/25 imbalance
+            "age": np.concatenate([np.random.normal(35, 10, n - 40), [np.nan] * 40]),  # 8% missing -> warning
+            "income": np.concatenate([np.random.normal(50000, 15000, n - 125), [np.nan] * 125]),  # 25% missing -> critical
+            "score": scores,
+            "constant_col": [42] * n,  # constant column -> warning
+            "label": [0] * (n - n // 5) + [1] * (n // 5),  # 80% majority -> warning
         }
     )
-    # Add duplicates
+    # Add duplicates (info)
     df = pd.concat([df, df.head(10)], ignore_index=True)
     data_csv = out_dir / "demo_data.csv"
     df.to_csv(data_csv, index=False)
