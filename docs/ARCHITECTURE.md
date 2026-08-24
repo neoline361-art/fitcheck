@@ -1,6 +1,6 @@
 # Architecture
 
-FitCheck is a pure-functional Python library organized into independent modules.
+FitCheck is a Python library organized into independent modules. Core logic uses pure functions; backends and renderers are small focused classes where state is needed.
 
 ```
 fitcheck/
@@ -31,7 +31,7 @@ benchmarks/
 
 | Decision | Rationale |
 |----------|-----------|
-| Pure functions over classes | Testable, composable, predictable (renderers/backends are small, focused classes) |
+| Pure functions for core logic | Testable, composable, predictable |
 | Separate modules by concern | Easy to reason about, easy to test |
 | HTML reports self-contained | No external CDN, shareable offline |
 | Fix scripts instead of mutation | User always controls data changes |
