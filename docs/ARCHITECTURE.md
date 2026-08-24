@@ -7,6 +7,7 @@ fitcheck/
 ├── __init__.py    # Public API: check(), report(), detect_drift(), detect_seasonality(), get_backend(), get_renderer(), log_to_mlflow(), log_to_dvc()
 ├── _version.py    # Single source of version
 ├── __main__.py    # python -m fitcheck
+├── py.typed       # PEP 561 marker
 ├── check.py       # Dataset health engine
 ├── report.py      # Model evaluation (classification + regression)
 ├── drift.py       # Distribution drift detection (KS, PSI, Wasserstein, JS, Chi2, schema)
@@ -14,14 +15,13 @@ fitcheck/
 ├── plugins.py     # Lightweight plugin registry and loader
 ├── magic.py       # Jupyter magics (%fitcheck, %%fitcheck)
 ├── demo.py        # Built-in demo (fitcheck demo)
+├── doctor.py      # Environment health diagnosis
 ├── fix.py         # Transparent fix script generation
 ├── html.py        # Dark-mode HTML report rendering
 ├── cli.py         # Terminal interface
-├── backends/      # Data backends: base, pandas, polars
-├── viz/           # Chart renderers: base, static (matplotlib), plotly
-├── integrations/  # Optional MLflow / DVC callbacks
-└── pro/           # Pro feature exports
-    └── __init__.py
+├── backends/      # Data backends: base, pandas, polars, duckdb
+├── viz/           # Chart renderers: plotly interactive
+└── integrations/  # Optional MLflow / DVC callbacks
 tests/
 examples/
 benchmarks/
