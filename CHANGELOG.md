@@ -4,16 +4,26 @@ All notable changes to FitCheck are documented here.
 
 ## [Unreleased]
 
+(No unreleased changes.)
+
+## [3.2.0] - 2026-08-24
+
 ### Added
 - `fitcheck doctor`: environment health diagnosis for required packages, versions, backends, and renderers; never runs automatically from `check`; `--json` output and exit code 0/2. (`make doctor`)
 - Auto-fix quality suite: generated scripts verified for syntax, execution, exit code, output content, original-data preservation, and post-fix revalidation across missing-values, duplicates, constant-column, high-cardinality, and text-skew datasets.
 - Edge-case hardening: robust behavior for empty inputs, single-row inputs, all-NaN columns, constant columns, one-class targets, missing or empty target columns, object-dtype and pyarrow StringDtype columns, and surrogate characters.
 - Reproducible benchmark runner (`benchmarks/run.py`, `make benchmark`): three warm-up runs plus ten timed repetitions with median/min/max reporting, shared deterministic datasets, and full environment recording; competitor timings appear only when measured locally on identical hardware.
+- PEP 561 `py.typed` marker for downstream type checking.
 ### Changed
 - Missing or empty target columns now fail fast with a clear, actionable `ValueError` instead of silently skipping the model workflow.
 - High-cardinality detection now covers pyarrow-backed StringDtype columns.
 - Pre-commit mypy hook drops the retired `numpy-stubs` package; verified installing in a clean repository.
 - Report data preview collapses into a native `<details>` section; report CSS gained a narrow-viewport (≤640px) responsive rule.
+### Fixed
+- Removed unused dependencies (`filelock`, `msgpack`, `requests`, `urllib3`) from `pyproject.toml`.
+- Excel test now correctly skips when openpyxl version is too old for the installed pandas.
+### Removed
+- Removed empty `fitcheck/pro/` shim module (consumers should import from `fitcheck.fix` directly).
 ### Testing
 - Core mutation testing on `fitcheck/check.py` (`mutmut`, configured in `pyproject.toml`) drives test quality beyond line coverage.
 - Optional-dependency behavior is tested in both installed and unavailable states.

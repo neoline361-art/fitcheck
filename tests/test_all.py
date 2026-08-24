@@ -394,7 +394,7 @@ class TestIntegration:
         """Version is accessible and single-sourced."""
         from fitcheck._version import __version__ as source_version
 
-        assert fitcheck.__version__ == "3.1.3"
+        assert fitcheck.__version__
         assert fitcheck.__version__ == source_version
         assert "check" in fitcheck.__all__
         assert "report" in fitcheck.__all__
@@ -434,9 +434,4 @@ class TestIntegration:
         runpy.run_module("fitcheck.__main__", run_name="__main__")
         assert "usage" in capsys.readouterr().out.lower()
 
-    def test_pro_module_importable(self) -> None:
-        """The pro shim exposes the fix script API."""
-        from fitcheck.pro import FixScriptGenerator, generate_fix_script
 
-        assert callable(FixScriptGenerator)
-        assert callable(generate_fix_script)
