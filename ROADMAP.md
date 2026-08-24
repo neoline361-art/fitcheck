@@ -1,25 +1,21 @@
 # Roadmap
 
-## Shipped (v2.0 → v2.1)
+## Shipped (v3.2.0 — 2026-08-24)
 
-- PyPI publishing (`pip install data-fitcheck`)
-- PSI, Wasserstein, and Jensen–Shannon drift methods with automatic numeric-method selection
-- Configurable thresholds via Python API and CLI
-- `fitcheck full` one-command workflow (executive index report, optional model)
-- CI-native CLI: `--json`, `--quiet`, `--fail-on`, exit codes 0/1/2/3
-- High-cardinality, text-length, text-encoding, and time-series gap checks; schema drift detection
-- Autocorrelation-based seasonality hint (`detect_seasonality`)
-- Model calibration (Brier, reliability diagram), per-class error analysis, adjusted R², explained variance
-- Tree feature importance with optional SHAP fallback (`pip install data-fitcheck[shap]`)
-- Lightweight plugin registry + `--plugins` CLI flag
-- Jupyter magics (`%fitcheck`, `%%fitcheck`)
-- Pre-commit hook (repo root, corrected file pattern)
-- Single source of version (`fitcheck/_version.py`)
-- Reproducible builds: `requirements.lock`, Sigstore signing, CycloneDX SBOM, tag-triggered release workflow
-- Optional polars loading backend (`--backend polars`) and interactive Plotly renderer (`--renderer plotly`)
-- Optional MLflow / DVC integrations
+- All v2.x features (drift methods, configurable thresholds, full workflow, CI CLI, model calibration, SHAP, plugins, Jupyter magics)
+- Text-encoding check, autocorrelation seasonality hint, MLflow/DVC integrations
+- Polars + DuckDB loading backends (`--backend polars|duckdb`)
+- Interactive Plotly renderer (`--renderer plotly`)
+- `fitcheck doctor` — environment health diagnosis (`--json`, exit code 0/2)
+- Edge-case hardening: empty inputs, all-NaN columns, surrogate characters, pyarrow StringDtype
+- Auto-fix quality suite: verified across 5 dataset types
+- Reproducible benchmark runner (`make benchmark`)
+- Responsive HTML reports (≤640px, collapsible `<details>` previews)
+- PEP 561 `py.typed` marker
+- Makefile with test/lint/typecheck/security/audit/doctor/benchmark targets
+- 142 tests at ~95% coverage, ruff clean, mypy strict clean, bandit clean
 
-## v3.1 (Next)
+## Next
 
 - [ ] Polars-native check engine (currently: polars accelerates loading, checks run on pandas)
 - [ ] Mutation testing (mutmut) wired into CI with a maintained score target
@@ -27,7 +23,9 @@
 
 ## Backlog
 
-- Web UI and streaming data validation
+- Distribution plots (histograms, KDE, correlation heatmap) in HTML reports
+- `fitcheck compare` command to diff two reports
+- JSON/CSV output for CI pipelines beyond `--json`
 - Deep learning model evaluation helpers (PyTorch, TensorFlow)
 - GPU-accelerated drift detection
 - Advanced governance (data contracts, lineage)
