@@ -13,7 +13,7 @@
 - Responsive HTML reports (≤640px, collapsible `<details>` previews)
 - PEP 561 `py.typed` marker
 - Makefile with test/lint/typecheck/security/audit/doctor/benchmark targets
-- 142 tests at ~95% coverage, ruff clean, mypy strict clean, bandit clean
+- 142 tests at ~94% coverage, ruff clean, mypy strict clean, bandit clean
 
 ## Next
 
