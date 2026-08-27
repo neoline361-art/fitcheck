@@ -2,6 +2,29 @@
 
 All notable changes to FitCheck are documented here.
 
+## [3.4.0] - 2026-08-27
+
+### Added
+- **Tamper-evident reports** (`fingerprint.py`): every HTML report now embeds a visible SHA-256 dataset fingerprint, config hash, version, and timestamp in the footer.
+- **CLI `verify` command**: `fitcheck verify report.html --against data.csv` checks whether a report matches its source data.
+- **HMAC-SHA256 report signing**: `--sign-key` flag on `fitcheck check` and `FITCHECK_SECRET_KEY` env var for cryptographic signatures.
+- **Raw file hashing**: `hash_file()` hashes raw file bytes before pandas loads the data — stable across pandas versions and platforms.
+- **`verify_report()` Python API**: programmatic verification with optional HMAC signature validation.
+- **Trust & Verification documentation**: README section explaining report integrity, verification workflow, and why open-source + verifiable beats closed-source.
+- **28 new tests** (`tests/test_trust.py`): fingerprint, file hashing (CSV + Parquet), HMAC signing, CLI verify, DataFrame warning.
+
+### Fixed
+- `__main__.py` was missing `sys.exit(main())` — exit codes from CLI commands were silently discarded.
+- `test_main_module_runs` updated to expect `SystemExit` from `__main__`.
+- Invalid `return_format` values now raise `ValueError` instead of silently falling back to `list`.
+
+### Changed
+- Version bumped to 3.4.0.
+- `check()` now accepts optional `secret_key` parameter for report signing.
+- `render_check_html()` accepts `raw_hash`, `result_summary`, and `secret_key` parameters.
+- Every HTML report footer shows a visible fingerprint with verify hint.
+- DataFrame inputs emit a warning that hash is computed from in-memory data, not raw file bytes.
+
 ## [3.3.0] - 2026-08-24
 
 ### Added
