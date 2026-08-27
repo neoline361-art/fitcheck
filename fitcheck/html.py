@@ -9,7 +9,7 @@ import pandas as pd
 
 _DARK_CSS = """
 :root{--bg:#0b1020;--fg:#e6edf7;--muted:#91a0b8;--card:#121a2b;--card2:#182238;--border:#293754;--accent:#7dd3fc;--critical:#fb7185;--warning:#fbbf24;--info:#60a5fa;--pass:#4ade80}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b1020,#101a31);color:var(--fg);line-height:1.55}.container{max-width:1180px;margin:0 auto;padding:40px 22px}h1{font-size:2.35rem;letter-spacing:-.04em;margin:0 0 8px}h2{font-size:1.2rem;margin:30px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{margin-top:0}.subtitle{color:var(--muted);margin:0 0 24px}.card,.metric-card{background:rgba(18,26,43,.92);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.18)}.card{padding:20px;margin-bottom:20px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px}.metric-card{padding:16px;text-align:center}.metric-value{font-size:1.8rem;font-weight:750;color:var(--accent);word-break:break-word}.metric-label{font-size:.72rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em}.badge-critical{background:rgba(251,113,133,.14);color:var(--critical)}.badge-warning{background:rgba(251,191,36,.14);color:var(--warning)}.badge-info{background:rgba(96,165,250,.14);color:var(--info)}.badge-pass{background:rgba(74,222,128,.14);color:var(--pass)}.issue-list{list-style:none;padding:0}.issue-item{background:var(--card);border-left:4px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:12px}.issue-critical{border-left-color:var(--critical)}.issue-warning{border-left-color:var(--warning)}.issue-info{border-left-color:var(--info)}code{background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin-top:4px;display:block;overflow-x:auto}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}tr:hover{background:rgba(125,211,252,.05)}.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}.plot-img{max-width:100%;border-radius:9px;border:1px solid var(--border);margin-top:10px;background:#fff}.footer{text-align:center;margin-top:44px;color:var(--muted);font-size:.8rem}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.callout{border-left:4px solid var(--accent);padding:12px 16px;background:rgba(96,165,250,.08);border-radius:0 8px 8px 0}.fix-code{position:relative;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;overflow-x:auto;font-size:.82rem}.fix-code code{background:none;padding:0;color:var(--fg)}.copy-btn{position:absolute;top:8px;right:8px;background:rgba(125,211,252,.12);border:1px solid var(--border);color:var(--accent);border-radius:6px;padding:3px 10px;font-size:.7rem;cursor:pointer}.copy-btn:hover{background:rgba(125,211,252,.25)}.collapsible{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px}summary{cursor:pointer;font-weight:700;color:var(--accent)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b1020,#101a31);color:var(--fg);line-height:1.55}.container{max-width:1180px;margin:0 auto;padding:40px 22px}h1{font-size:2.35rem;letter-spacing:-.04em;margin:0 0 8px}h2{font-size:1.2rem;margin:30px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{margin-top:0}.subtitle{color:var(--muted);margin:0 0 24px}.card,.metric-card{background:rgba(18,26,43,.92);border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.18)}.card{padding:20px;margin-bottom:20px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px}.metric-card{padding:16px;text-align:center}.metric-value{font-size:1.8rem;font-weight:750;color:var(--accent);word-break:break-word}.metric-label{font-size:.72rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.06em}.badge-critical{background:rgba(251,113,133,.14);color:var(--critical)}.badge-warning{background:rgba(251,191,36,.14);color:var(--warning)}.badge-info{background:rgba(96,165,250,.14);color:var(--info)}.badge-pass{background:rgba(74,222,128,.14);color:var(--pass)}.issue-list{list-style:none;padding:0}.issue-item{background:var(--card);border-left:4px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:12px}.issue-critical{border-left-color:var(--critical)}.issue-warning{border-left-color:var(--warning)}.issue-info{border-left-color:var(--info)}code{background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin-top:4px;display:block;overflow-x:auto}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}tr:hover{background:rgba(125,211,252,.05)}.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}.plot-img{max-width:100%;border-radius:9px;border:1px solid var(--border);margin-top:10px;background:#fff}.footer{text-align:center;margin-top:44px;color:var(--muted);font-size:.8rem}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.callout{border-left:4px solid var(--accent);padding:12px 16px;background:rgba(96,165,250,.08);border-radius:0 8px 8px 0}.fix-code{position:relative;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;overflow-x:auto;font-size:.82rem}.fix-code code{background:none;padding:0;color:var(--fg)}.copy-btn{position:absolute;top:8px;right:8px;background:rgba(125,211,252,.12);border:1px solid var(--border);color:var(--accent);border-radius:6px;padding:3px 10px;font-size:.7rem;cursor:pointer}.copy-btn:hover{background:rgba(125,211,252,.25)}.collapsible{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px}summary{cursor:pointer;font-weight:700;color:var(--accent)}.fingerprint{margin-top:32px;padding:10px 14px;background:var(--card);border:1px dashed var(--border);border-radius:8px;font-size:.72rem;color:var(--muted);text-align:center}.fingerprint code{background:none;padding:0 4px;color:var(--accent);font-size:.7rem}
 @media(max-width:640px){.container{padding:24px 14px}h1{font-size:1.7rem}.metric-grid{grid-template-columns:repeat(2,1fr)}.plot-grid{grid-template-columns:1fr}.metric-value{font-size:1.4rem}.issue-item{padding:10px 12px}th,td{padding:8px 7px;font-size:.82rem}.card{padding:14px}body{font-size:.92rem}}
 """
 
@@ -31,14 +31,13 @@ def _metric_card(label: str, value: Any, color: str | None = None) -> str:
     return f'<div class="metric-card"><div class="metric-value"{style}>{escape(str(value))}</div><div class="metric-label">{escape(label)}</div></div>'
 
 
-def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: str | None) -> str:
+def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: str | None, *, config: dict[str, Any] | None = None, raw_hash: str | None = None, result_summary: str = "", secret_key: str | None = None) -> str:
     """Render the dataset report; writes to ``output`` when provided and returns the HTML."""
     counts = {level: sum(1 for i in issues if i.get("severity") == level) for level in ("critical", "warning", "info")}
     status = "PASS" if not issues else "ISSUES FOUND"
     status_class = "badge-pass" if not issues else "badge-warning"
     parts = [f'<h1>FitCheck Dataset Report</h1><p class="subtitle">A local, read-only health check with actionable next steps.</p><div class="card"><span class="badge {status_class}">{status}</span><div class="metric-grid" style="margin-top:16px">', _metric_card("Rows", len(df)), _metric_card("Columns", len(df.columns)), _metric_card("Critical", counts["critical"], "critical"), _metric_card("Warnings", counts["warning"], "warning"), _metric_card("Info", counts["info"], "info"), '</div></div>']
     if issues:
-        # Critical issues first so they scream; warnings and info collapse.
         severity_order = {"critical": 0, "warning": 1, "info": 2}
         ordered = sorted(issues, key=lambda i: severity_order.get(str(i.get("severity", "info")), 3))
         critical = [i for i in ordered if i.get("severity") == "critical"]
@@ -59,6 +58,7 @@ def render_check_html(issues: list[dict[str, Any]], df: pd.DataFrame, output: st
     parts.append('<h2>Data preview</h2>')
     preview_html = df.head(10).to_html(index=False, classes="preview-table", escape=True)
     parts.append(f'<details><summary>First 10 rows of {len(df):,} total rows</summary><div class="detail-body">{preview_html}</div></details>')
+    parts.append(_fingerprint_fragment(df, config or {}, raw_hash=raw_hash, result_summary=result_summary, secret_key=secret_key))
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
     parts.append(_copy_js())
     return _render(_base_html("FitCheck Dataset Report", "".join(parts)), output)
@@ -144,6 +144,7 @@ def render_report_html(metrics: dict[str, Any], plots: dict[str, str], task: str
         for feat, imp in list(metrics["feature_importance"].items())[:15]:
             parts.append(f"<tr><td>{escape(str(feat))}</td><td>{float(imp):.4f}</td></tr>")
         parts.append("</table></div>")
+    parts.append(_fingerprint_fragment(None, {}))
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
     return _render(_base_html("FitCheck Model Report", "".join(parts), head_extra=head_extra), output)
 
@@ -164,6 +165,7 @@ def render_drift_html(results: list[dict[str, Any]], ref_df: pd.DataFrame, prod_
             if result.get("drifted"):
                 parts.append(f'<li class="issue-item issue-critical"><strong>{escape(str(result.get("feature", "")))}</strong> — {escape(str(result.get("message", "")))}</li>')
         parts.append("</ul>")
+    parts.append(_fingerprint_fragment(None, {}))
     parts.append('<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>')
     return _render(_base_html("FitCheck Drift Report", "".join(parts)), output)
 
@@ -188,9 +190,34 @@ def render_full_html(summary: dict[str, Any], output: str) -> str:
         f'<li class="issue-item"><a href="model_report.html"><strong>Model evaluation</strong></a> — {model.get("task", "not run")}</li>',
         f'<li class="issue-item"><a href="drift_report.html"><strong>Drift detection</strong></a> — {drift.get("drifted", 0)} of {drift.get("features", 0)} features drifted</li>',
         '</ul>',
+        _fingerprint_fragment(None, {}),
         '<div class="footer">Generated locally by <a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>',
     ]
     return _render(_base_html("FitCheck Executive Report", "".join(parts)), output)
+
+
+def _fingerprint_fragment(df: pd.DataFrame | None, config: dict[str, Any], *, raw_hash: str | None = None, result_summary: str = "", secret_key: str | None = None) -> str:
+    """Embed a tamper-evident fingerprint in the report footer."""
+    try:
+        from fitcheck.fingerprint import fingerprint_html
+        if df is not None:
+            return fingerprint_html(df, config, raw_hash=raw_hash, result_summary=result_summary, secret_key=secret_key)
+        # For model/drift/full reports without a primary DataFrame, version-only
+        import json as _json
+        from datetime import datetime, timezone
+        from fitcheck._version import __version__
+        fp = {"dataset_hash": "n/a", "config_hash": "n/a",
+              "fitcheck_version": __version__, "timestamp": datetime.now(timezone.utc).isoformat()}
+        return (
+            '<div class="fingerprint">'
+            f'FitCheck <code>v{fp["fitcheck_version"]}</code> · '
+            f'<code>{fp["timestamp"][:19]}</code>'
+            f'<input type="hidden" class="fc-fingerprint" '
+            f'value="{escape(_json.dumps(fp))}">'
+            '</div>'
+        )
+    except ImportError:
+        return ''
 
 
 def _render(content: str, output: str | None) -> str:

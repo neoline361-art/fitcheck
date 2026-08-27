@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,7 @@ def check(
     time_column: str | None = None,
     sample_rows: int | None = None,
     backend: str = "pandas",
+    secret_key: str | None = None,
 ) -> list[dict[str, Any]] | dict[str, Any] | str:
     """Run a comprehensive health check on a dataset.
 
@@ -37,6 +39,7 @@ def check(
         time_column: Optional timestamp column for basic time-series validation.
         sample_rows: Optional number of CSV rows to inspect instead of loading the full file.
         backend: Data loading backend: "pandas" (default), "polars", or "duckdb" (both optional dependencies).
+        secret_key: Optional HMAC-SHA256 secret key for report signing.
 
     Returns:
         Issues found in the dataset. Format depends on return_format.
@@ -47,6 +50,19 @@ def check(
     """
     if sample_rows is not None and sample_rows <= 0:
         raise ValueError("sample_rows must be a positive integer")
+
+    # Compute raw file hash BEFORE loading (evidence-grade, stable across pandas versions)
+    raw_hash: str | None = None
+    if isinstance(data, str) and os.path.exists(data):
+        from fitcheck.fingerprint import hash_file
+        raw_hash = hash_file(data)
+    elif isinstance(data, pd.DataFrame):
+        warnings.warn(
+            "DataFrame input — dataset hash is computed from in-memory data, "
+            "not raw file bytes. Hash may differ across pandas versions.",
+            stacklevel=2,
+        )
+
     df = _load_data(data, sample_rows=sample_rows, backend=backend)
     input_path = data if isinstance(data, str) else "dataframe_input"
     if target and target not in df.columns:
@@ -107,7 +123,16 @@ def check(
         },
     }
 
-    render_check_html(issues, df, output)
+    # Compute result summary for HMAC signing
+    result_summary = "PASS" if not issues else f"{len(issues)} issues found"
+
+    render_check_html(
+        issues, df, output,
+        config=config,
+        raw_hash=raw_hash,
+        result_summary=result_summary,
+        secret_key=secret_key,
+    )
 
     if auto_fix and issues:
         try:
@@ -122,8 +147,10 @@ def check(
         return result_dict
     elif return_format == "json":
         return json.dumps(result_dict, indent=2, default=str)
-    else:
+    elif return_format == "list":
         return issues
+    else:
+        raise ValueError(f"Unknown return_format: {return_format!r}. Expected 'list', 'dict', or 'json'.")
 
 
 def _load_data(
@@ -277,7 +304,6 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
     threshold = config["high_cardinality_ratio"]
     for col in df.columns:
         dtype = df[col].dtype
-        # Continuous floats are expected to be ~unique; only ID-like dtypes are meaningful.
         if not (
             pd.api.types.is_object_dtype(dtype)
             or isinstance(dtype, pd.CategoricalDtype)
@@ -291,7 +317,7 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
             continue
         non_null = df[col].dropna()
         if len(non_null) < 50:
-            continue  # cardinality is only meaningful past 50 rows (upgrade path: make configurable)
+            continue
         ratio = non_null.nunique() / len(non_null)
         if ratio > threshold:
             issues.append(
@@ -307,11 +333,7 @@ def _detect_high_cardinality(df: pd.DataFrame, config: dict[str, float]) -> list
 
 
 def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
-    """Flag object columns with values that are not strictly UTF-8 encodable.
-
-    Mixed encodings usually surface as lone surrogates after a lossy decode;
-    a strict re-encode raises UnicodeEncodeError on those values.
-    """
+    """Flag object columns with values that are not strictly UTF-8 encodable."""
     issues = []
     for col in df.select_dtypes(include=["object"]).columns:
         sample = df[col].dropna().head(100)
@@ -324,7 +346,7 @@ def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
                         "column": col,
                         "type": "text_encoding",
                         "severity": "warning",
-                        "message": f'{col}: contains non-UTF8 encodable characters (possible mixed encoding)',
+                        "message": f"{col}: contains non-UTF8 encodable characters (possible mixed encoding)",
                         "suggestion": f'Re-decode "{col}" with the correct source encoding before further analysis',
                     }
                 )
@@ -333,11 +355,7 @@ def _detect_text_encoding(df: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def _safe_lengths(series: pd.Series) -> pd.Series:
-    """Compute string lengths while normalizing lone surrogates safely.
-
-    Uses a pure-Python scalar map so no value ever passes through pyarrow
-    string conversion, which rejects lone surrogates at frame construction.
-    """
+    """Compute string lengths while normalizing lone surrogates safely."""
     def _len(value: object) -> int:
         text = str(value).encode("utf-8", errors="replace").decode("utf-8", errors="replace")
         return len(text)

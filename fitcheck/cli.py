@@ -61,6 +61,22 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Minimum severity that fails the run (default: any issue fails)",
     )
+    check_parser.add_argument(
+        "--sign-key",
+        default=None,
+        help="HMAC-SHA256 secret key for report signing (or env var FITCHECK_SECRET_KEY)",
+    )
+
+    # verify command
+    verify_parser = subparsers.add_parser("verify", help="Verify a FitCheck report matches its source data")
+    verify_parser.add_argument("report", help="Path to FitCheck HTML report")
+    verify_parser.add_argument("--against", default=None, help="Path to original CSV/Parquet to verify against")
+    verify_parser.add_argument(
+        "--secret-key",
+        default=None,
+        help="HMAC-SHA256 secret key for signature verification (or env var FITCHECK_SECRET_KEY)",
+    )
+    verify_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON to stdout")
 
     # report command
     report_parser = subparsers.add_parser("report", help="Evaluate a trained model")
@@ -81,9 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     drift_parser = subparsers.add_parser("drift", help="Detect distribution drift")
     drift_parser.add_argument("reference", help="Reference dataset path")
     drift_parser.add_argument("production", help="Production dataset path")
-    drift_parser.add_argument(
-        "--output", "-o", default="drift_report.html", help="Output HTML path"
-    )
+    drift_parser.add_argument("--output", "-o", default="drift_report.html", help="Output HTML path")
     drift_parser.add_argument("--threshold", type=float, default=0.05, help="P-value threshold")
     drift_parser.add_argument(
         "--method",
@@ -115,6 +129,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "check":
             return _run_check(args)
+        if args.command == "verify":
+            return _run_verify(args)
         if args.command == "report":
             return _run_report(args)
         if args.command == "drift":
@@ -151,6 +167,12 @@ def _run_check(args: Any) -> int:
     max_exit = 0
     results: list[dict[str, Any]] = []
 
+    # Resolve HMAC secret key (CLI flag > env var)
+    secret_key = args.sign_key or None
+    if not secret_key:
+        import os
+        secret_key = os.environ.get("FITCHECK_SECRET_KEY")
+
     for path in files:
         output = args.output if len(files) == 1 else f"fitcheck_report_{Path(path).stem}.html"
         result = check(
@@ -164,6 +186,7 @@ def _run_check(args: Any) -> int:
             time_column=args.time_column,
             sample_rows=args.sample_rows,
             backend=args.backend,
+            secret_key=secret_key,
         )
         if args.json:
             result_dict = cast(dict[str, Any], result)
@@ -175,11 +198,48 @@ def _run_check(args: Any) -> int:
         if not args.json and not args.quiet:
             print(f"Report saved: {output}")
             print(f"Issues found: {len(issues)}")
+            print(f"Verify: fitcheck verify {output} --against {path}")
 
     if args.json:
         payload: Any = results[0] if len(results) == 1 else results
         print(json.dumps(payload, indent=2, default=str))
     return max_exit
+
+
+def _run_verify(args: Any) -> int:
+    """Execute the verify command."""
+    import os
+    from fitcheck.fingerprint import verify_report
+
+    secret_key = args.secret_key or os.environ.get("FITCHECK_SECRET_KEY")
+    result = verify_report(
+        args.report,
+        args.against,
+        secret_key=secret_key,
+    )
+
+    if args.json:
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        if result["match"]:
+            print(f"✅ VALID — {result['message']}")
+        else:
+            print(f"❌ TAMPERED — {result['message']}")
+        print(f"  Report hash:  {result['report_hash'][:16]}…")
+        if result.get("current_hash"):
+            print(f"  Current hash: {result['current_hash'][:16]}…")
+        print(f"  Version:      {result['report_version']}")
+        if result.get("signature_valid") is not None:
+            sig_status = "✅ VALID" if result["signature_valid"] else "❌ INVALID"
+            print(f"  Signature:    {sig_status}")
+
+    # Exit code: 0=valid, 1=tampered, 2=no fingerprint
+    match_val = bool(result.get("match", False))
+    if match_val:
+        return 0
+    if "No fingerprint" in result.get("message", ""):
+        return 2
+    return 1
 
 
 def _run_report(args: Any) -> int:
@@ -225,7 +285,7 @@ def _run_full(args: Any) -> int:
     dataset = cast(
         dict[str, Any],
         check(
-            args.data,  # pass the path so --auto-fix scripts reference the real file
+            args.data,
             target=args.target,
             output=str(out_dir / "dataset_report.html"),
             auto_fix=args.auto_fix,

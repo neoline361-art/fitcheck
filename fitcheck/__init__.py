@@ -5,6 +5,7 @@ from fitcheck.backends import get_backend
 from fitcheck.check import check
 from fitcheck.drift import detect_drift
 from fitcheck.extensions import detect_seasonality, run_plugins, validate_timeseries
+from fitcheck.fingerprint import verify_report
 from fitcheck.integrations import log_to_dvc, log_to_mlflow
 from fitcheck.plugins import load_plugin, registry
 from fitcheck.report import report
@@ -25,6 +26,7 @@ __all__ = [
     "get_renderer",
     "log_to_mlflow",
     "log_to_dvc",
+    "verify_report",
     "__version__",
 ]
 

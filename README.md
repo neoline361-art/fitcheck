@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-164%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-191%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -207,6 +207,62 @@ Inside a notebook, `%load_ext fitcheck` enables inline reports:
 ```python
 %load_ext fitcheck
 %fitcheck df --target label
+```
+
+## Trust & verification
+
+Every FitCheck HTML report embeds a **visible cryptographic fingerprint** in the footer — dataset SHA-256, config hash, version, and timestamp. When signing is enabled, an HMAC-SHA256 signature is included. This makes reports **tamper-evident evidence**, not decoration.
+
+### Verify a report
+
+```bash
+fitcheck verify fitcheck_report.html --against data.csv
+# ✅ VALID — Report matches current data
+# or
+# ❌ TAMPERED — MISMATCH — report may be tampered or data has changed
+```
+
+### Sign reports with HMAC-SHA256
+
+```bash
+# Via CLI flag
+fitcheck check data.csv --sign-key $FITCHECK_SECRET
+
+# Via environment variable
+export FITCHECK_SECRET_KEY=my-secret
+fitcheck check data.csv
+
+# Verify signature
+fitcheck verify report.html --against data.csv --secret-key $FITCHECK_SECRET
+```
+
+### Why open-source + verifiable > closed-source + unverifiable
+
+FitCheck is Apache 2.0 licensed — the same license as TensorFlow, PyTorch, and Linux. Readable code is a feature, not a bug. The real protection against tampering is not hiding source code; it is making every report **cryptographically tied to the exact data, configuration, and version** that produced it. No other tool in this space offers verifiable reports.
+
+| Threat | Protection |
+|---|---|
+| Report edited after generation | Dataset SHA-256 mismatch detected |
+| Report generated from different data | File hash comparison via `--against` |
+| HMAC signature forged | Timing-safe comparison via `hmac.compare_digest` |
+| Signature verified with wrong key | Exit code 1 + explicit error message |
+
+### Python API
+
+```python
+from fitcheck.fingerprint import verify_report, hash_file
+
+# Verify a report matches its source CSV
+result = verify_report("report.html", "data.csv")
+print(result["match"])       # True or False
+print(result["message"])     # Human-readable result
+
+# Verify with HMAC signature
+result = verify_report("report.html", "data.csv", secret_key="my-key")
+print(result["signature_valid"])  # True or False
+
+# Hash a file directly
+print(hash_file("data.csv"))  # SHA-256 hex digest
 ```
 
 ## Reports and privacy

@@ -431,7 +431,9 @@ class TestIntegration:
         import runpy
 
         monkeypatch.setattr("sys.argv", ["fitcheck"])
-        runpy.run_module("fitcheck.__main__", run_name="__main__")
+        with pytest.raises(SystemExit) as exc_info:
+            runpy.run_module("fitcheck.__main__", run_name="__main__")
+        assert exc_info.value.code == 1  # no command => exit 1
         assert "usage" in capsys.readouterr().out.lower()
 
 
