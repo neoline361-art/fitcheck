@@ -46,7 +46,7 @@ def fingerprint(
     if secret_key:
         fp["result_summary"] = result_summary
         payload = f"{fp['dataset_hash']}|{fp['config_hash']}|{fp['fitcheck_version']}|{fp['timestamp']}|{result_summary}"
-        fp["signature"] = hmac.new(
+        fp["signature"] = hmac.HMAC(
             secret_key.encode("utf-8"),
             payload.encode("utf-8"),
             hashlib.sha256,
@@ -139,7 +139,7 @@ def verify_report(
     # Verify HMAC signature when provided
     if secret_key and "signature" in fp:
         payload = f"{fp['dataset_hash']}|{fp['config_hash']}|{fp['fitcheck_version']}|{fp['timestamp']}|{fp.get('result_summary', '')}"
-        expected_sig = hmac.new(
+        expected_sig = hmac.HMAC(
             secret_key.encode("utf-8"),
             payload.encode("utf-8"),
             hashlib.sha256,
