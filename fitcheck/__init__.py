@@ -3,12 +3,15 @@
 from fitcheck._version import __version__
 from fitcheck.backends import get_backend
 from fitcheck.check import check
+from fitcheck.config import FitCheckConfig
+from fitcheck.decision import IssueCluster, cluster_issues
 from fitcheck.drift import detect_drift
 from fitcheck.extensions import detect_seasonality, run_plugins, validate_timeseries
 from fitcheck.fingerprint import fingerprint, hash_file, verify_report
 from fitcheck.integrations import log_to_dvc, log_to_mlflow
 from fitcheck.plugins import load_plugin, registry
 from fitcheck.report import report
+from fitcheck.verdict import Verdict, compute_verdict
 from fitcheck.viz import get_renderer
 
 __author__ = "neoline361-art"
@@ -29,6 +32,11 @@ __all__ = [
     "verify_report",
     "hash_file",
     "fingerprint",
+    "FitCheckConfig",
+    "IssueCluster",
+    "cluster_issues",
+    "Verdict",
+    "compute_verdict",
     "__version__",
 ]
 

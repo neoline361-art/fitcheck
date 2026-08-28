@@ -221,6 +221,99 @@ def _fingerprint_fragment(df: pd.DataFrame | None, config: dict[str, Any], *, ra
         return ''
 
 
+def render_decision_html(
+    issues: list[dict[str, Any]],
+    verdict_obj: Any,
+    output: str | None,
+) -> str:
+    """Render the decision-mode report with verdict banner and clusters.
+
+    Classic issue list is included as a collapsible section below the
+    decision content.  Fingerprint footer is preserved from v3.4.0.
+    """
+    decision = verdict_obj.decision
+    badge_map = {
+        "PASS": "badge-pass",
+        "WARN": "badge-warning",
+        "BLOCK": "badge-critical",
+    }
+    banner_color_map = {
+        "PASS": "var(--pass)",
+        "WARN": "var(--warning)",
+        "BLOCK": "var(--critical)",
+    }
+    status_class = badge_map.get(decision, "badge-info")
+    banner_color = banner_color_map.get(decision, "var(--accent)")
+
+    parts = [
+        '<h1>FitCheck Preflight Decision</h1>',
+        '<p class="subtitle">Automated root-cause analysis with actionable verdict.</p>',
+        # Verdict banner
+        f'<div class="card" style="border-left:4px solid {banner_color}">',
+        f'<span class="badge {status_class}">{decision}</span>',
+        f'<span style="margin-left:8px;color:var(--muted);font-size:.82rem">'
+        f'Confidence: {escape(verdict_obj.confidence)} · '
+        f'Score: {verdict_obj.score}/10</span>',
+        '</div>',
+        # Next action callout
+        f'<div class="callout">'
+        f'<strong>Next action:</strong> {escape(verdict_obj.next_action)}',
+        '</div>',
+    ]
+
+    # Primary cluster card
+    if verdict_obj.primary_cluster is not None:
+        pc = verdict_obj.primary_cluster
+        cols = ', '.join(pc.columns[:5]) or '—'
+        parts.extend([
+            '<h2>Primary cluster</h2>',
+            '<div class="card">',
+            f'<strong>{escape(pc.description)}</strong>',
+            f'<br>Impact score: <code>{pc.score}</code>',
+            f'<br>Affected columns: <code>{escape(cols)}</code>',
+            f'<br><small>Recommendation: {escape(pc.recommendation)}</small>',
+            '</div>',
+        ])
+
+    # All clusters (collapsible)
+    if len(verdict_obj.all_clusters) > 1:
+        parts.append('<details class="collapsible"><summary>All clusters '
+                     f'({len(verdict_obj.all_clusters)})</summary>')
+        for cluster in verdict_obj.all_clusters:
+            cols = ', '.join(cluster.columns[:5]) or '—'
+            parts.extend([
+                '<div style="margin-top:12px">',
+                f'<strong>{escape(cluster.description)}</strong>',
+                f' · Score: <code>{cluster.score}</code>',
+                f'<br>Affected: <code>{escape(cols)}</code>',
+                f'<br><small>{escape(cluster.recommendation)}</small>',
+                '</div>',
+            ])
+        parts.append('</details>')
+
+    # Classic issue list (collapsible below — progressive disclosure)
+    if issues:
+        severity_order = {"critical": 0, "warning": 1, "info": 2}
+        ordered = sorted(issues, key=lambda i: severity_order.get(str(i.get("severity", "info")), 3))
+        parts.append(
+            f'<details class="collapsible"><summary>All issues '
+            f'({len(issues)})</summary><ul class="issue-list" '
+            f'style="margin-top:12px">'
+        )
+        for idx, issue in enumerate(ordered):
+            parts.append(_issue_item(issue, idx))
+        parts.append('</ul></details>')
+
+    # Fingerprint footer (unchanged from v3.4.0)
+    parts.append(_fingerprint_fragment(None, {}))
+    parts.append(
+        '<div class="footer">Generated locally by '
+        '<a href="https://github.com/neoline361-art/fitcheck">FitCheck</a></div>'
+    )
+    parts.append(_copy_js())
+    return _render(_base_html("FitCheck Preflight Decision", "".join(parts)), output)
+
+
 def _render(content: str, output: str | None) -> str:
     """Write ``content`` to ``output`` when given and always return it."""
     if output is not None:

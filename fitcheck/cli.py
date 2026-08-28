@@ -67,6 +67,17 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="HMAC-SHA256 secret key for report signing (or env var FITCHECK_SECRET_KEY)",
     )
+    check_parser.add_argument(
+        "--mode",
+        choices=["classic", "decision"],
+        default="classic",
+        help="Output mode: 'classic' (default) or 'decision' (verdict + clusters)",
+    )
+    check_parser.add_argument(
+        "--policy",
+        default=None,
+        help="Path to fitcheck.yaml policy file (for --mode decision)",
+    )
 
     # verify command
     verify_parser = subparsers.add_parser("verify", help="Verify a FitCheck report matches its source data")
@@ -164,9 +175,12 @@ def _run_check(args: Any) -> int:
         "outlier_threshold": args.outlier_threshold,
     }
     plugins = _resolve_plugins(args.plugins)
-    return_format = "dict" if args.json else "list"
+    mode = getattr(args, "mode", "classic")
+    # Decision mode always needs dict format for clustering/verdict
+    return_format = "dict" if args.json or mode == "decision" else "list"
     max_exit = 0
     results: list[dict[str, Any]] = []
+    policy_path = getattr(args, "policy", None)
 
     # Resolve HMAC secret key (CLI flag > env var)
     secret_key = args.sign_key or None
@@ -188,17 +202,44 @@ def _run_check(args: Any) -> int:
             backend=args.backend,
             secret_key=secret_key,
         )
-        if args.json:
+        if args.json or mode == "decision":
             result_dict = cast(dict[str, Any], result)
             results.append(result_dict)
             issues = result_dict.get("issues", [])
         else:
             issues = cast(list[dict[str, Any]], result)
         max_exit = max(max_exit, _exit_code(issues, args.fail_on))
-        if not args.json and not args.quiet:
+        if not args.json and not args.quiet and mode != "decision":
             print(f"Report saved: {output}")
             print(f"Issues found: {len(issues)}")
             print(f"Verify: fitcheck verify {output} --against {path}")
+
+    # Decision mode: compute verdict and render decision HTML
+    if mode == "decision" and results:
+        from fitcheck.decision import cluster_issues
+        from fitcheck.html import render_decision_html
+        from fitcheck.policy import load_policy
+        from fitcheck.verdict import compute_verdict
+
+        policy = load_policy(policy_path)
+        first_issues = results[0].get("issues", []) if isinstance(results[0], dict) else []
+        clusters = cluster_issues(first_issues)
+        verdict = compute_verdict(clusters, policy)
+        # Override HTML output with decision layout
+        decision_output = output if len(files) == 1 else f"fitcheck_decision_{Path(files[0]).stem}.html"
+        render_decision_html(first_issues, verdict, decision_output)
+        if not args.json and not args.quiet:
+            print(f"Verdict: {verdict.decision} (score {verdict.score})")
+            print(f"Next: {verdict.next_action}")
+        if args.json:
+            # Enrich the JSON payload with decision data
+            verdict_dict = verdict.to_dict()
+            if isinstance(results[0], dict):
+                results[0]["verdict"] = verdict_dict["verdict"]
+                results[0]["confidence"] = verdict_dict["confidence"]
+                results[0]["primary_cluster"] = verdict_dict["primary_cluster"]
+                results[0]["next_action"] = verdict_dict["next_action"]
+                results[0]["clusters"] = verdict_dict["clusters"]
 
     if args.json:
         payload: Any = results[0] if len(results) == 1 else results
