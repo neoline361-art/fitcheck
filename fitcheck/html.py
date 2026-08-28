@@ -233,12 +233,12 @@ def render_decision_html(
     """
     decision = verdict_obj.decision
     badge_map = {
-        "PASS": "badge-pass",
+        "PASS": "badge-pass",  # nosec B105 — CSS class name, not a password
         "WARN": "badge-warning",
         "BLOCK": "badge-critical",
     }
     banner_color_map = {
-        "PASS": "var(--pass)",
+        "PASS": "var(--pass)",  # nosec B105 — CSS variable, not a password
         "WARN": "var(--warning)",
         "BLOCK": "var(--critical)",
     }
