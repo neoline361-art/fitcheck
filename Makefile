@@ -26,11 +26,11 @@ test-fast: ## Run the suite without coverage reporting
 	$(PYTHON) -m pytest -q --no-cov
 
 lint: ## Run the Ruff linter
-	ruff check fitcheck tests benchmarks scripts
+	ruff check fitcheck tests benchmarks
 
 format: ## Format code with Ruff
-	ruff format fitcheck tests benchmarks scripts
-	ruff check --fix fitcheck tests benchmarks scripts
+	ruff format fitcheck tests benchmarks
+	ruff check --fix fitcheck tests benchmarks
 
 typecheck: ## Run strict mypy type checking
 	mypy fitcheck

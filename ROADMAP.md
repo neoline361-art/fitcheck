@@ -1,5 +1,16 @@
 # Roadmap
 
+## Shipped (v3.4.0 — 2026-08-27)
+
+- Tamper-evident HTML reports with visible SHA-256 dataset fingerprints
+- CLI `verify` command: `fitcheck verify report.html --against data.csv`
+- HMAC-SHA256 report signing via `--sign-key` and `FITCHECK_SECRET_KEY` env var
+- Raw file hashing (stable across pandas versions)
+- `verify_report()` Python API for programmatic verification
+- `__main__.py` fix: exit codes now properly propagated via `sys.exit()`
+- `return_format` bug fix: invalid values raise `ValueError`
+- 28 new tests in `tests/test_trust.py` (191 total, 0 failures)
+
 ## Shipped (v3.2.0 — 2026-08-24)
 
 - All v2.x features (drift methods, configurable thresholds, full workflow, CI CLI, model calibration, SHAP, plugins, Jupyter magics)

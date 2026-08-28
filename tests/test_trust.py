@@ -3,24 +3,21 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from fitcheck._version import __version__
 from fitcheck.fingerprint import (
+    _hash_dataframe,
+    _hash_dict,
     fingerprint,
     fingerprint_html,
     hash_file,
     verify_report,
-    _hash_dataframe,
-    _hash_dict,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -239,6 +236,7 @@ class TestHashHelpers:
 class TestDataFrameWarning:
     def test_dataframe_input_warns(self, sample_df, sample_config, tmp_path):
         import warnings
+
         from fitcheck.check import check
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")

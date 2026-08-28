@@ -95,10 +95,42 @@ results = fitcheck.detect_drift("train.csv", "prod.csv", method="auto")
 drifted = sum(result["drifted"] for result in results)
 ```
 
+## `fitcheck.fingerprint.hash_file(path)`
+
+Hash raw file bytes with SHA-256 before pandas loads the data. Returns a 64-character hex digest. Stable across pandas versions and platforms.
+
+```python
+from fitcheck.fingerprint import hash_file
+print(hash_file("data.csv"))  # 'a3f8b2...'
+```
+
+## `fitcheck.fingerprint.fingerprint(df, config, raw_hash=None, secret_key=None, result_summary=None)`
+
+Compute a full fingerprint dict containing `dataset_hash`, `config_hash`, `fitcheck_version`, `timestamp`, and optionally an HMAC-SHA256 `signature`. When `raw_hash` is provided (file input), it overrides the DataFrame hash.
+
+```python
+from fitcheck.fingerprint import fingerprint
+fp = fingerprint(df, config, raw_hash=hash_file("data.csv"), secret_key="my-key")
+```
+
+## `fitcheck.fingerprint.verify_report(report_path, csv_path=None, secret_key=None)`
+
+Verify a FitCheck HTML report against its source data. Returns a dict with `match` (bool), `message` (str), `report_hash`, `current_hash`, `report_version`, and `signature_valid` (bool or None).
+
+```python
+from fitcheck.fingerprint import verify_report
+result = verify_report("report.html", "data.csv", secret_key="my-key")
+print(result["match"])         # True or False
+print(result["signature_valid"])  # True, False, or None
+```
+
 ## CLI examples
 
 ```bash
 fitcheck check data.csv --target label
+fitcheck check data.csv --sign-key $FITCHECK_SECRET    # HMAC signing
+fitcheck verify report.html --against data.csv          # verify report integrity
+fitcheck verify report.html --against data.csv --secret-key $KEY  # verify HMAC
 fitcheck check big.parquet --backend polars          # optional fast loading
 fitcheck check big.parquet --backend duckdb           # optional out-of-core loading
 fitcheck report model.joblib X.npy y.npy --renderer plotly

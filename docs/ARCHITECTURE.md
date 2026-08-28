@@ -18,7 +18,8 @@ fitcheck/
 ├── doctor.py      # Environment health diagnosis
 ├── fix.py         # Transparent fix script generation
 ├── html.py        # Dark-mode HTML report rendering
-├── cli.py         # Terminal interface
+├── fingerprint.py # SHA-256 dataset hashing, HMAC-SHA256 signing, report verification
+├── cli.py         # Terminal interface (check, verify, report, drift, full, demo, doctor)
 ├── backends/      # Data backends: base, pandas, polars, duckdb
 ├── viz/           # Chart renderers: plotly interactive
 └── integrations/  # Optional MLflow / DVC callbacks
@@ -37,3 +38,5 @@ benchmarks/
 | Fix scripts instead of mutation | User always controls data changes |
 | No config files | Zero-boilerplate philosophy |
 | Optional heavy deps are extras | polars, plotly, shap, mlflow, dvc stay out of the core install |
+| Tamper-evident reports | Every HTML report embeds a visible SHA-256 fingerprint; HMAC signing optional |
+| Verifiable outputs | `fitcheck verify` proves a report was not tampered with after generation |

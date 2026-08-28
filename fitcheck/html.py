@@ -205,6 +205,7 @@ def _fingerprint_fragment(df: pd.DataFrame | None, config: dict[str, Any], *, ra
         # For model/drift/full reports without a primary DataFrame, version-only
         import json as _json
         from datetime import datetime, timezone
+
         from fitcheck._version import __version__
         fp = {"dataset_hash": "n/a", "config_hash": "n/a",
               "fitcheck_version": __version__, "timestamp": datetime.now(timezone.utc).isoformat()}

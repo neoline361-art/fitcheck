@@ -137,6 +137,8 @@ Terminal check output (left), the interactive Plotly model report (center), and 
 | DataFrame schema validation | ⚠️ | ⚠️ | ⚠️ | ✅ |
 | Local-first, no telemetry, no hosted service | ✅ | ⚠️ | ⚠️ | ✅ |
 | One-command `full` workflow (data + model + drift) | ✅ | — | — | — |
+| Tamper-evident reports (SHA-256 fingerprint + HMAC signing) | ✅ | — | — | — |
+| CLI report verification (`fitcheck verify`) | ✅ | — | — | — |
 
 ✅ = supported; ⚠️ = partial or via add-on; — = not a core feature. FitCheck's rows reflect the verified contents of this repository. Competitor rows are based on public documentation and may change — verify before making procurement decisions.
 
@@ -149,6 +151,8 @@ fitcheck check data.csv --missing-warning 0.10 --missing-critical 0.30
 fitcheck check data.csv --time-column timestamp --plugins my_checks
 fitcheck check big.parquet --backend polars        # optional fast loading backend
 fitcheck check big.parquet --backend duckdb         # optional out-of-core loading backend
+fitcheck check data.csv --sign-key $SECRET          # HMAC-signed report
+fitcheck verify report.html --against data.csv      # verify report integrity
 fitcheck report model.joblib X_test.npy y_test.npy --renderer plotly
 fitcheck drift train.csv production.csv --method psi
 fitcheck full data.csv --target label --model model.joblib --reference train.csv
@@ -285,7 +289,7 @@ make benchmark     # reproducible benchmark suite
 make clean         # remove build and cache artifacts
 ```
 
-The suite contains **164 passing tests** at approximately **95% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
+The suite contains **191 passing tests** at approximately **94% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
 
 ## Large CSVs and contact data
 

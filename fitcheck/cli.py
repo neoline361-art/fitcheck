@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -170,7 +171,6 @@ def _run_check(args: Any) -> int:
     # Resolve HMAC secret key (CLI flag > env var)
     secret_key = args.sign_key or None
     if not secret_key:
-        import os
         secret_key = os.environ.get("FITCHECK_SECRET_KEY")
 
     for path in files:
@@ -208,7 +208,6 @@ def _run_check(args: Any) -> int:
 
 def _run_verify(args: Any) -> int:
     """Execute the verify command."""
-    import os
     from fitcheck.fingerprint import verify_report
 
     secret_key = args.secret_key or os.environ.get("FITCHECK_SECRET_KEY")
