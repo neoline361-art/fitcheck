@@ -38,6 +38,19 @@ pre-commit install
 
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `security`
 
+## Branch Protection
+
+All changes to `main` must go through a pull request. Direct pushes to `main` are blocked by GitHub branch protection rules. See `docs/BRANCH_PROTECTION.md` for the exact settings.
+
+**Workflow:**
+1. Create a feature branch from `main`
+2. Make changes and commit
+3. Push the feature branch
+4. Open a PR against `main`
+5. CI must pass (quality + demo jobs)
+6. At least 1 approval required
+7. Squash merge into `main`
+
 ## Pull Request Process
 
 1. Update CHANGELOG.md
