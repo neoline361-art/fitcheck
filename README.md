@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-191%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-239%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -103,6 +103,7 @@ fitcheck.check(
 | Area | Built-in diagnostics |
 |---|---|
 | Dataset health | Missing values, duplicates, constants, class imbalance, IQR outliers, high cardinality, text-length skew, text-encoding warnings |
+| Decision engine | Issue clustering by impact area, severity-weighted scoring (1–10), PASS/WARN/BLOCK verdicts, root-cause recommendations, YAML policy overrides |
 | Time series | Timestamp parsing, monotonicity, duplicates, and frequency gaps (`--time-column`) |
 | Model classification | Accuracy, precision, recall, F1, confusion matrix, ROC/AUC, average precision, precision–recall curve, recommended threshold, Brier score, calibration curve, per-class error analysis, and tree feature importance |
 | Model regression | MSE, RMSE, MAE, R², adjusted R², explained variance, residual analysis, actual-versus-predicted plot, and tree feature importance |
@@ -128,6 +129,7 @@ Terminal check output (left), the interactive Plotly model report (center), and 
 | Capability | FitCheck | Evidently | Deepchecks | Pandera |
 |---|---|---|---|---|
 | Data quality checks (missing, duplicates, constants, outliers) | ✅ | ✅ | ✅ | ✅ |
+| Decision engine (PASS/WARN/BLOCK, clustering, root-cause) | ✅ | — | — | — |
 | Model evaluation (classification/regression) | ✅ | ✅ | ✅ | — |
 | Drift detection (KS/PSI, categorical) | ✅ | ✅ | ✅ | — |
 | CI-native CLI with exit codes (`--json`, `--fail-on`) | ✅ | ✅ | ✅ | ⚠️ |
@@ -146,6 +148,8 @@ Terminal check output (left), the interactive Plotly model report (center), and 
 
 ```bash
 fitcheck check data.csv --target label
+fitcheck check data.csv --mode decision            # PASS/WARN/BLOCK verdict
+fitcheck check data.csv --mode decision --policy fitcheck.yaml  # custom policy
 fitcheck check data1.csv data2.csv            # multi-file check
 fitcheck check data.csv --missing-warning 0.10 --missing-critical 0.30
 fitcheck check data.csv --time-column timestamp --plugins my_checks
@@ -289,7 +293,7 @@ make benchmark     # reproducible benchmark suite
 make clean         # remove build and cache artifacts
 ```
 
-The suite contains **191 passing tests** at approximately **94% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
+The suite contains **239 passing tests** at approximately **93% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
 
 ## Large CSVs and contact data
 

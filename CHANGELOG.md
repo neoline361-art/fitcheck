@@ -2,6 +2,25 @@
 
 All notable changes to FitCheck are documented here.
 
+## [4.0.0a1] - 2026-08-29
+
+### Added
+- **Decision Engine** (`decision.py`): clusters issues by impact area (training, labeling, data-quality, collection, governance), computes severity-weighted scores (1–10), and produces PASS/WARN/BLOCK verdicts.
+- **Verdict engine** (`verdict.py`): `compute_verdict()` maps cluster scores to a final decision with confidence level and next-action recommendations.
+- **FitCheckConfig** (`config.py`): frozen dataclass for typed configuration with `from_dict`/`to_dict`/`merge`; validates threshold consistency (critical ≥ warning).
+- **Policy loader** (`policy.py`): `load_policy()` reads `fitcheck.yaml` with auto-detect (CWD), validates block/warn score thresholds, and supports `--policy` CLI override.
+- **CLI `--mode` flag**: `fitcheck check data.csv --mode decision` routes through the decision engine; `--mode classic` (default) preserves v3.4.0 behavior.
+- **CLI `--policy` flag**: `fitcheck check data.csv --mode decision --policy fitcheck.yaml` loads custom verdict thresholds.
+- **Decision HTML report** (`render_decision_html`): green/amber/red verdict banner, primary cluster card, next-action callout, collapsible cluster details, and fingerprint footer.
+- **Public API exports**: `FitCheckConfig`, `IssueCluster`, `cluster_issues`, `Verdict`, `compute_verdict` added to `fitcheck/__init__.py`.
+- **Branch protection docs** (`docs/BRANCH_PROTECTION.md`): documents required status checks and PR workflow.
+- **48 new tests** (`tests/test_decision.py`): config, policy, decision, verdict, HTML, CLI mode, and integration tests; 239 total, 93% coverage.
+
+### Changed
+- Version bumped to 4.0.0a1 (alpha).
+- README updated: test count badge (239), coverage (93%), CLI commands (`--mode`, `--policy`), feature comparison (Decision Engine row), "What FitCheck checks" table.
+- CONTRIBUTING.md: added PR-only workflow section.
+
 ## [3.4.0] - 2026-08-27
 
 ### Added
