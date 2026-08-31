@@ -78,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Path to fitcheck.yaml policy file (for --mode decision)",
     )
+    check_parser.add_argument(
+        "--artifact",
+        default=None,
+        metavar="PATH",
+        help="Bundle report + fingerprint + signature into a .fitcheck.zip",
+    )
 
     # verify command
     verify_parser = subparsers.add_parser("verify", help="Verify a FitCheck report matches its source data")
@@ -104,6 +110,12 @@ def main(argv: list[str] | None = None) -> int:
         default="static",
         help="Chart renderer (plotly is interactive; requires the optional plotly package)",
     )
+    report_parser.add_argument(
+        "--artifact",
+        default=None,
+        metavar="PATH",
+        help="Bundle report + fingerprint + signature into a .fitcheck.zip",
+    )
 
     # drift command
     drift_parser = subparsers.add_parser("drift", help="Detect distribution drift")
@@ -116,6 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         choices=["auto", "ks", "psi", "wasserstein", "chi2", "js"],
         default="auto",
     )
+    drift_parser.add_argument(
+        "--artifact",
+        default=None,
+        metavar="PATH",
+        help="Bundle report + fingerprint + signature into a .fitcheck.zip",
+    )
 
     # full command
     full_parser = subparsers.add_parser("full", help="Run dataset, model, and optional drift checks")
@@ -126,6 +144,12 @@ def main(argv: list[str] | None = None) -> int:
     full_parser.add_argument("--output-dir", default="fitcheck_reports", help="Report directory")
     full_parser.add_argument("--auto-fix", action="store_true", help="Generate fix script")
     full_parser.add_argument("--quiet", action="store_true", help="Suppress progress output")
+    full_parser.add_argument(
+        "--artifact",
+        default=None,
+        metavar="PATH",
+        help="Bundle report + fingerprint + signature into a .fitcheck.zip",
+    )
 
     # demo command
     demo_parser = subparsers.add_parser("demo", help="Run a quick demo")
@@ -189,10 +213,11 @@ def _run_check(args: Any) -> int:
 
     for path in files:
         output = args.output if len(files) == 1 else f"fitcheck_report_{Path(path).stem}.html"
+        # Decision mode: suppress classic HTML — only render_decision_html writes the file
         result = check(
             data=path,
             target=args.target,
-            output=output,
+            output=output if mode != "decision" else None,
             return_format=return_format,
             auto_fix=args.auto_fix,
             config=config,
@@ -240,6 +265,14 @@ def _run_check(args: Any) -> int:
                 results[0]["primary_cluster"] = verdict_dict["primary_cluster"]
                 results[0]["next_action"] = verdict_dict["next_action"]
                 results[0]["clusters"] = verdict_dict["clusters"]
+        # Verdict-driven exit codes for decision mode
+        verdict_exit = {"PASS": 0, "WARN": 1, "BLOCK": 2}
+        max_exit = verdict_exit.get(verdict.decision, 3)
+
+    # --artifact: bundle report + fingerprint + signature into .fitcheck.zip
+    artifact_path = getattr(args, "artifact", None)
+    if artifact_path and not args.json:
+        _build_artifact(artifact_path, output, secret_key)
 
     if args.json:
         payload: Any = results[0] if len(results) == 1 else results
@@ -248,15 +281,24 @@ def _run_check(args: Any) -> int:
 
 
 def _run_verify(args: Any) -> int:
-    """Execute the verify command."""
+    """Execute the verify command.
+
+    Supports both bare HTML reports and .fitcheck.zip artifact bundles.
+    """
     from fitcheck.fingerprint import verify_report
 
+    report_path = Path(args.report)
     secret_key = args.secret_key or os.environ.get("FITCHECK_SECRET_KEY")
-    result = verify_report(
-        args.report,
-        args.against,
-        secret_key=secret_key,
-    )
+
+    # Detect .fitcheck.zip bundles
+    if report_path.suffix == ".zip" or ".fitcheck" in report_path.name:
+        result = _verify_artifact(report_path, args.against, secret_key)
+    else:
+        result = verify_report(
+            args.report,
+            args.against,
+            secret_key=secret_key,
+        )
 
     if args.json:
         print(json.dumps(result, indent=2, default=str))
@@ -293,6 +335,9 @@ def _run_report(args: Any) -> int:
     metrics = report(model, x_test_arr, y_test_arr, output=args.output, renderer=args.renderer)
     print(f"Model report saved: {args.output}")
     print(f"Metrics: { {k: v for k, v in metrics.items() if k not in ('feature_importance', 'per_class_errors')} }")
+    artifact_path = getattr(args, "artifact", None)
+    if artifact_path:
+        _build_artifact(artifact_path, args.output, None)
     return 0
 
 
@@ -308,6 +353,9 @@ def _run_drift(args: Any) -> int:
     drifted = sum(1 for r in results if r.get("drifted"))
     print(f"Drift report saved: {args.output}")
     print(f"Features tested: {len(results)}, Drifted: {drifted}")
+    artifact_path = getattr(args, "artifact", None)
+    if artifact_path:
+        _build_artifact(artifact_path, args.output, None)
     return 0
 
 
@@ -360,6 +408,9 @@ def _run_full(args: Any) -> int:
     if not args.quiet:
         print(f"Reports saved in: {out_dir}")
         print(f"Executive report: {out_dir / 'index.html'}")
+    artifact_path = getattr(args, "artifact", None)
+    if artifact_path:
+        _build_artifact(artifact_path, str(out_dir / "index.html"), None)
     return 0
 
 
@@ -370,6 +421,136 @@ def _resolve_plugins(spec: str | None) -> list[Any] | None:
     from fitcheck.plugins import load_plugin
 
     return [load_plugin(name.strip()) for name in spec.split(",") if name.strip()]
+
+
+def _build_artifact(dest: str, html_path: str, secret_key: str | None) -> None:
+    """Bundle report.html + fingerprint.json + optional signature.bin into a zip."""
+    import hashlib
+    import hmac as _hmac
+    import json as _json
+    import zipfile
+
+    src = Path(html_path)
+    if not src.exists():
+        raise FileNotFoundError(f"Report not found: {html_path}")
+
+    fingerprint_json = _extract_fingerprint_json(src)
+    sig_bytes: bytes | None = None
+    if secret_key and fingerprint_json:
+        payload = (
+            f"{fingerprint_json.get('dataset_hash', '')}"
+            f"|{fingerprint_json.get('config_hash', '')}"
+            f"|{fingerprint_json.get('fitcheck_version', '')}"
+            f"|{fingerprint_json.get('timestamp', '')}"
+            f"|{fingerprint_json.get('result_summary', '')}"
+        )
+        sig_bytes = _hmac.HMAC(
+            secret_key.encode("utf-8"),
+            payload.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(src, "report.html")
+        zf.writestr(
+            "fingerprint.json",
+            _json.dumps(fingerprint_json, indent=2),
+        )
+        if sig_bytes is not None:
+            zf.writestr("signature.bin", sig_bytes)
+    print(f"Artifact bundle: {dest}")
+
+
+def _extract_fingerprint_json(html_path: Path) -> dict[str, Any]:
+    """Extract the hidden fingerprint JSON from an HTML report."""
+    import json as _json
+    import re as _re
+
+    html = html_path.read_text(encoding="utf-8")
+    match = _re.search(
+        r'<input[^>]*class="fc-fingerprint"[^>]*value="([^"]+)"', html
+    )
+    if not match:
+        return {}
+    raw = match.group(1).replace("&quot;", '"')
+    result: dict[str, Any] = _json.loads(raw)
+    return result
+
+
+def _verify_artifact(
+    bundle_path: Path,
+    against: str | None,
+    secret_key: str | None,
+) -> dict[str, Any]:
+    """Verify a .fitcheck.zip artifact bundle."""
+    import hashlib
+    import hmac as _hmac
+    import json as _json
+    import zipfile
+
+    from fitcheck.fingerprint import hash_file
+
+    if not bundle_path.exists():
+        return {"match": False, "message": f"Bundle not found: {bundle_path}"}
+
+    with zipfile.ZipFile(bundle_path, "r") as zf:
+        names = zf.namelist()
+        if "report.html" not in names:
+            return {"match": False, "message": "Bundle missing report.html"}
+        if "fingerprint.json" not in names:
+            return {"match": False, "message": "Bundle missing fingerprint.json"}
+
+        fingerprint_json: dict[str, Any] = _json.loads(zf.read("fingerprint.json"))
+        report_hash: str = fingerprint_json.get("dataset_hash", "")
+        report_version: str = fingerprint_json.get("fitcheck_version", "unknown")
+        report_timestamp: str = fingerprint_json.get("timestamp", "unknown")
+
+    result: dict[str, Any] = {
+        "match": False,
+        "report_hash": report_hash,
+        "current_hash": None,
+        "report_version": report_version,
+        "report_timestamp": report_timestamp,
+        "signature_valid": None,
+        "message": "",
+    }
+
+    # Verify HMAC signature when present
+    if secret_key and "signature.bin" in names:
+        with zipfile.ZipFile(bundle_path, "r") as zf:
+            sig_bytes = zf.read("signature.bin")
+        payload = (
+            f"{fingerprint_json.get('dataset_hash', '')}"
+            f"|{fingerprint_json.get('config_hash', '')}"
+            f"|{fingerprint_json.get('fitcheck_version', '')}"
+            f"|{fingerprint_json.get('timestamp', '')}"
+            f"|{fingerprint_json.get('result_summary', '')}"
+        )
+        expected = _hmac.HMAC(
+            secret_key.encode("utf-8"),
+            payload.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        result["signature_valid"] = bool(_hmac.compare_digest(sig_bytes, expected))
+        if not result["signature_valid"]:
+            result["message"] = "HMAC signature mismatch — bundle may be tampered"
+            return result
+
+    # Verify data hash against source file
+    if against is not None:
+        current_hash = hash_file(against)
+        result["current_hash"] = current_hash
+        result["match"] = report_hash == current_hash
+        if not result["match"]:
+            result["message"] = "MISMATCH — bundle data hash differs from source file"
+            return result
+    else:
+        result["match"] = True
+        result["message"] = "Bundle fingerprint present (no source file provided for comparison)"
+
+    if result["match"] and not result["message"]:
+        result["message"] = "Bundle matches source data"
+    return result
 
 
 def _exit_code(issues: list[dict[str, Any]], fail_on: str | None) -> int:

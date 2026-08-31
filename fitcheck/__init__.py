@@ -9,7 +9,7 @@ from fitcheck.drift import detect_drift
 from fitcheck.extensions import detect_seasonality, run_plugins, validate_timeseries
 from fitcheck.fingerprint import fingerprint, hash_file, verify_report
 from fitcheck.integrations import log_to_dvc, log_to_mlflow
-from fitcheck.plugins import load_plugin, registry
+from fitcheck.plugins import BaseCheck, load_plugin, registry
 from fitcheck.report import report
 from fitcheck.verdict import Verdict, compute_verdict
 from fitcheck.viz import get_renderer
@@ -37,6 +37,7 @@ __all__ = [
     "cluster_issues",
     "Verdict",
     "compute_verdict",
+    "BaseCheck",
     "__version__",
 ]
 
