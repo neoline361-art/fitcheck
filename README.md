@@ -193,7 +193,7 @@ Add FitCheck as a CI gate in your workflow:
 
 ```yaml
 - name: FitCheck data validation
-  uses: neoline361-art/fitcheck@v4.0.0
+  uses: neoline361-art/fitcheck@v4.0.0b1
   with:
     command: 'check data.csv --mode decision'
     fail-on: 'warning'
