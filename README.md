@@ -10,14 +10,15 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-decision-mode.png" width="32%" alt="Decision mode terminal">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/decision-report-banner.png" width="32%" alt="Verdict banner HTML report">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/report-fingerprint-footer.png" width="32%" alt="Cryptographic artifact verification">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-check.png" width="32%" alt="Terminal check output">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/html-report.png" width="32%" alt="Interactive HTML report">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/demo-output.png" width="32%" alt="One-command demo">
 </p>
 
 <p align="center">
-  <em>Decision mode CLI (left), Tamper-evident HTML verdict banner (center), and Cryptographic artifact verification (right).</em>
+  <em>Terminal check output (left), the interactive Plotly model report (center), and the one-command demo (right).</em>
 </p>
+
 
 ---
 
