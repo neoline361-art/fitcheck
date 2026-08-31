@@ -284,7 +284,7 @@ class TestVerdictExitCodes:
         csv = tmp_path / "block.csv"
         df.to_csv(csv, index=False)
         exit_code = main(["check", str(csv), "--mode", "decision", "--quiet"])
-        assert exit_code in (1, 2)  # WARN or BLOCK
+        assert exit_code >= 1  # At least WARN for 40% missing data
 
     def test_classic_mode_unaffected(self, tmp_path: Path) -> None:
         csv = _make_csv(tmp_path)

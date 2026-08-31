@@ -185,13 +185,6 @@ echo $?   # 0 pass, 1 warnings, 2 critical, 3 runtime error
 
 `--json` emits a result dict for a single file and a list of dicts for multiple files. High-cardinality detection targets ID-like columns (object, category, and integer dtypes), so continuous numeric measurements are not flagged as cardinality issues.
 
-| Exit code | Meaning |
-|---|---|
-| `0` | No issues (or only issues below `--fail-on`) |
-| `1` | Warnings found |
-| `2` | Critical issues found |
-| `3` | Runtime error (missing file, invalid config) |
-
 The repository ships a [pre-commit hook](.pre-commit-hooks.yaml) and a GitHub Action ([`action.yml`](action.yml)) so dataset health blocks merges the same way linting does.
 
 ### GitHub Action

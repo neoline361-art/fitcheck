@@ -21,7 +21,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install FitCheck
-        run: pip install -e ".[dev]"
+        run: |
+          pip install -r requirements.lock
+          pip install -e . --no-deps
       - name: Find changed data files
         id: files
         run: |

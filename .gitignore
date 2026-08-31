@@ -50,6 +50,9 @@ venv/
 Thumbs.db
 *.csv
 *_fix_script.py
+nohup.out
+*.fitcheck.zip
+*_local_backup/
 
 # mutmut
 .mutmut-cache

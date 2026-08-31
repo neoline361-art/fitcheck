@@ -34,7 +34,7 @@ jobs:
       - name: Audit dependencies
         run: pip-audit
       - name: Test with pytest
-        run: pytest --cov=fitcheck --cov-report=term-missing
+        run: pytest --cov=fitcheck --cov-report=term-missing --cov-report=json
       - name: Coverage badge
         run: |
           coverage=$(python -c "import json; print(json.load(open('htmlcov/status.json'))['note'])")

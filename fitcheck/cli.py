@@ -502,6 +502,8 @@ def _verify_artifact(
 
         fingerprint_json: dict[str, Any] = _json.loads(zf.read("fingerprint.json"))
         report_hash: str = fingerprint_json.get("dataset_hash", "")
+        if not report_hash:
+            return {"match": False, "message": "Bundle fingerprint missing dataset_hash"}
         report_version: str = fingerprint_json.get("fitcheck_version", "unknown")
         report_timestamp: str = fingerprint_json.get("timestamp", "unknown")
 
