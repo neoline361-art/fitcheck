@@ -16,7 +16,7 @@ from fitcheck.html import render_check_html
 def check(
     data: str | pd.DataFrame,
     target: str | None = None,
-    output: str = "fitcheck_report.html",
+    output: str | None = "fitcheck_report.html",
     return_format: str = "list",
     auto_fix: bool = False,
     config: dict[str, float] | None = None,
@@ -133,15 +133,14 @@ def check(
         result_summary=result_summary,
         secret_key=secret_key,
     )
+    if auto_fix and issues and output is not None:
+            try:
+                from fitcheck.fix import generate_fix_script
 
-    if auto_fix and issues:
-        try:
-            from fitcheck.fix import generate_fix_script
-
-            script_path = str(Path(output).with_suffix("")) + "_fix_script.py"
-            generate_fix_script(result_dict, input_path, script_path)
-        except ImportError:
-            pass
+                script_path = str(Path(output).with_suffix("")) + "_fix_script.py"
+                generate_fix_script(result_dict, input_path, script_path)
+            except ImportError:
+                pass
 
     if return_format == "dict":
         return result_dict

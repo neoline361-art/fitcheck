@@ -1,0 +1,50 @@
+name: 'FitCheck'
+description: 'ML data validation preflight check — blocks PRs on BLOCK verdict'
+inputs:
+  command:
+    description: 'FitCheck CLI command (e.g. "check data.csv --mode decision")'
+    required: true
+    default: 'check data.csv --mode decision'
+  fail-on:
+    description: 'Minimum severity to fail (info/warning/critical)'
+    required: false
+    default: 'warning'
+  policy:
+    description: 'Path to fitcheck.yaml policy file'
+    required: false
+    default: ''
+  secret-key:
+    description: 'HMAC-SHA256 secret key for report signing'
+    required: false
+    default: ''
+outputs:
+  verdict:
+    description: 'Decision verdict (PASS/WARN/BLOCK) when using --mode decision'
+    value: ${{ steps.fitcheck.outputs.verdict }}
+  exit-code:
+    description: 'FitCheck exit code'
+    value: ${{ steps.fitcheck.outputs.exit-code }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Install FitCheck
+      run: pip install data-fitcheck
+      shell: bash
+    - name: Run FitCheck
+      id: fitcheck
+      run: |
+        POLICY_FLAG=""
+        if [ -n "${{ inputs.policy }}" ]; then
+          POLICY_FLAG="--policy ${{ inputs.policy }}"
+        fi
+        FITCHECK_EXIT=0
+        fitcheck ${{ inputs.command }} --fail-on ${{ inputs.fail-on }} $POLICY_FLAG || FITCHECK_EXIT=$?
+        echo "exit-code=${FITCHHECK_EXIT}" >> "$GITHUB_OUTPUT"
+        if echo "${{ inputs.command }}" | grep -q -- "--mode decision"; then
+          VERDICT=$(fitcheck ${{ inputs.command }} --fail-on ${{ inputs.fail-on }} $POLICY_FLAG --json --quiet 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('verdict','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
+          echo "verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
+        fi
+        exit ${FITCHHECK_EXIT}
+      shell: bash
+      env:
+        FITCHECK_SECRET_KEY: ${{ inputs.secret-key }}

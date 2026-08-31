@@ -2,6 +2,25 @@
 
 All notable changes to FitCheck are documented here.
 
+## [4.0.0b1] - 2026-08-31
+
+### Added
+- **GitHub Action** (`action.yml`): composite action for CI gating — installs FitCheck, runs checks, extracts verdict, uploads report as artifact. Usage: `uses: neoline361-art/fitcheck@v4`
+- **`--artifact` flag** on `check`, `report`, `drift`, `full` commands: bundles `report.html` + `fingerprint.json` + optional `signature.bin` into a portable `.fitcheck.zip` archive
+- **`fitcheck verify <bundle.zip>`**: verifies artifact bundles — validates fingerprint, HMAC signature, and source data hash
+- **`BaseCheck` ABC** (`plugins.py`): structured, versioned plugin interface with `name`/`version`/`run` abstract methods and `__call__` adapter for backward-compatible legacy callable plugins
+- **Verdict-driven exit codes** for `--mode decision`: PASS=0, WARN=1, BLOCK=2 (classic mode unchanged)
+- **25+ new tests** (`tests/test_sprint3.py`): BaseCheck, artifact bundles, artifact verify, verdict exit codes, policy wiring, decision mode double-write
+
+### Changed
+- **Policy thresholds wired** (`verdict.py`): `compute_verdict()` now uses `Policy.block_score` and `Policy.warn_score` instead of hardcoded 8/4
+- **Decision mode no double-writes** (`cli.py`): passes `output=None` to `check()` in decision mode — only `render_decision_html` writes the file
+- **`check()` output parameter**: type annotation updated from `str` to `str | None` to correctly reflect `None` handling
+- Version bumped to 4.0.0b1 (beta)
+
+### Fixed
+- `hmac.new` (deprecated/removed) replaced with `hmac.HMAC` in artifact bundling and verification
+
 ## [4.0.0a1] - 2026-08-29
 
 ### Added

@@ -4,7 +4,7 @@
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
   <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-239%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-260%20passing-brightgreen" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -156,7 +156,9 @@ fitcheck check data.csv --time-column timestamp --plugins my_checks
 fitcheck check big.parquet --backend polars        # optional fast loading backend
 fitcheck check big.parquet --backend duckdb         # optional out-of-core loading backend
 fitcheck check data.csv --sign-key $SECRET          # HMAC-signed report
+fitcheck check data.csv --artifact report.fitcheck.zip  # bundle report + fingerprint + signature
 fitcheck verify report.html --against data.csv      # verify report integrity
+fitcheck verify report.fitcheck.zip --against data.csv  # verify artifact bundle
 fitcheck report model.joblib X_test.npy y_test.npy --renderer plotly
 fitcheck drift train.csv production.csv --method psi
 fitcheck full data.csv --target label --model model.joblib --reference train.csv
@@ -190,11 +192,34 @@ echo $?   # 0 pass, 1 warnings, 2 critical, 3 runtime error
 | `2` | Critical issues found |
 | `3` | Runtime error (missing file, invalid config) |
 
-The repository ships a [pre-commit hook](.pre-commit-hooks.yaml) and a GitHub Action gate ([`.github/workflows/fitcheck-gate.yml`](.github/workflows/fitcheck-gate.yml)) so dataset health blocks merges the same way linting does.
+The repository ships a [pre-commit hook](.pre-commit-hooks.yaml) and a GitHub Action ([`action.yml`](action.yml)) so dataset health blocks merges the same way linting does.
+
+### GitHub Action
+
+Add FitCheck as a CI gate in your workflow:
+
+```yaml
+- name: FitCheck data validation
+  uses: neoline361-art/fitcheck@v4.0.0
+  with:
+    command: 'check data.csv --mode decision'
+    fail-on: 'warning'
+    policy: 'fitcheck.yaml'
+    secret-key: ${{ secrets.FITCHHECK_SECRET_KEY }}
+```
+
+| Input | Description | Default |
+|---|---|---|
+| `command` | FitCheck CLI command | `check data.csv --mode decision` |
+| `fail-on` | Minimum severity to fail | `warning` |
+| `policy` | Path to fitcheck.yaml | (empty) |
+| `secret-key` | HMAC signing key | (empty) |
+
+**Outputs:** `verdict` (PASS/WARN/BLOCK) and `exit-code` (0–3).
 
 ## Plugins and Jupyter
 
-Custom checks are plain functions that take a DataFrame and return issue dictionaries:
+Custom checks are plain functions that take a DataFrame and return issue dictionaries, or structured `BaseCheck` subclasses:
 
 ```python
 from fitcheck.plugins import registry
@@ -206,8 +231,34 @@ def my_check(df):
 registry.register("my_check", my_check)
 ```
 
+Or use the structured `BaseCheck` contract for versioned, self-describing plugins:
+
+```python
+from fitcheck.plugins import BaseCheck, registry
+
+class RangeCheck(BaseCheck):
+    @property
+    def name(self) -> str:
+        return "range_check"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    def run(self, df, config):
+        issues = []
+        for col in df.select_dtypes(include="number").columns:
+            if df[col].max() > 1e6:
+                issues.append({"column": col, "type": "range", "severity": "warning",
+                               "message": f"{col} has values > 1e6"})
+        return issues
+
+registry.register("range_check", RangeCheck)
+```
+
 ```bash
 fitcheck check data.csv --plugins my_check
+fitcheck check data.csv --plugins my_check,range_check  # multiple plugins
 ```
 
 Inside a notebook, `%load_ext fitcheck` enables inline reports:
@@ -255,6 +306,23 @@ FitCheck is Apache 2.0 licensed — the same license as TensorFlow, PyTorch, and
 | HMAC signature forged | Timing-safe comparison via `hmac.compare_digest` |
 | Signature verified with wrong key | Exit code 1 + explicit error message |
 
+### Verify an artifact bundle
+
+```bash
+# Create a bundle
+fitcheck check data.csv --artifact report.fitcheck.zip --sign-key $SECRET
+
+# Verify the bundle (data hash + HMAC signature)
+fitcheck verify report.fitcheck.zip --against data.csv --secret-key $SECRET
+# ✅ VALID — Bundle matches source data
+
+# Or via Python API
+from fitcheck.fingerprint import verify_report
+result = verify_report("report.fitcheck.zip", "data.csv", secret_key="my-key")
+print(result["match"])           # True or False
+print(result["signature_valid"])  # True or False
+```
+
 ### Python API
 
 ```python
@@ -293,7 +361,7 @@ make benchmark     # reproducible benchmark suite
 make clean         # remove build and cache artifacts
 ```
 
-The suite contains **239 passing tests** at approximately **93% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
+The suite contains **260 passing tests** at approximately **95% total coverage**, with core mutation testing performed on the check engine (`fitcheck/check.py`) to drive test quality beyond line coverage. Reports are fully self-contained (no external CDN), responsive on narrow viewports, and use collapsible sections for large datasets.
 
 ## Large CSVs and contact data
 

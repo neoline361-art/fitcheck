@@ -96,10 +96,11 @@ def compute_verdict(
     decision: str
     confidence: str
 
+    # Use policy thresholds instead of hardcoded 8/4
     if (
         primary.score >= policy.block_score
         or total_score >= policy.block_score
-        or (has_critical and total_score >= 5)
+        or (has_critical and total_score >= policy.warn_score)
     ):
         decision = "BLOCK"
         confidence = "HIGH" if has_critical else "MEDIUM"
