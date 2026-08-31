@@ -266,7 +266,7 @@ def _run_check(args: Any) -> int:
                 results[0]["next_action"] = verdict_dict["next_action"]
                 results[0]["clusters"] = verdict_dict["clusters"]
         # Verdict-driven exit codes for decision mode
-        verdict_exit = {"PASS": 0, "WARN": 1, "BLOCK": 2}
+        verdict_exit = {"PASS": 0, "WARN": 1, "BLOCK": 2}  # nosec B105
         max_exit = verdict_exit.get(verdict.decision, 3)
 
     # --artifact: bundle report + fingerprint + signature into .fitcheck.zip
@@ -430,6 +430,9 @@ def _build_artifact(dest: str, html_path: str, secret_key: str | None) -> None:
     import json as _json
     import zipfile
 
+    if not dest.endswith(".fitcheck.zip"):
+        raise ValueError(f"Artifact path must end with .fitcheck.zip, got: {dest}")
+
     src = Path(html_path)
     if not src.exists():
         raise FileNotFoundError(f"Report not found: {html_path}")
@@ -493,6 +496,7 @@ def _verify_artifact(
     if not bundle_path.exists():
         return {"match": False, "message": f"Bundle not found: {bundle_path}"}
 
+    # Read all needed bytes in a single with block
     with zipfile.ZipFile(bundle_path, "r") as zf:
         names = zf.namelist()
         if "report.html" not in names:
@@ -500,10 +504,15 @@ def _verify_artifact(
         if "fingerprint.json" not in names:
             return {"match": False, "message": "Bundle missing fingerprint.json"}
 
-        fingerprint_json: dict[str, Any] = _json.loads(zf.read("fingerprint.json"))
-        report_hash: str = fingerprint_json.get("dataset_hash", "")
-        report_version: str = fingerprint_json.get("fitcheck_version", "unknown")
-        report_timestamp: str = fingerprint_json.get("timestamp", "unknown")
+        fingerprint_json_data: dict[str, Any] = _json.loads(zf.read("fingerprint.json"))
+        report_hash: str = fingerprint_json_data.get("dataset_hash", "")
+        report_version: str = fingerprint_json_data.get("fitcheck_version", "unknown")
+        report_timestamp: str = fingerprint_json_data.get("timestamp", "unknown")
+
+        # Read signature in same block if present
+        sig_bytes: bytes | None = None
+        if "signature.bin" in names:
+            sig_bytes = zf.read("signature.bin")
 
     result: dict[str, Any] = {
         "match": False,
@@ -516,15 +525,13 @@ def _verify_artifact(
     }
 
     # Verify HMAC signature when present
-    if secret_key and "signature.bin" in names:
-        with zipfile.ZipFile(bundle_path, "r") as zf:
-            sig_bytes = zf.read("signature.bin")
+    if secret_key and sig_bytes is not None:
         payload = (
-            f"{fingerprint_json.get('dataset_hash', '')}"
-            f"|{fingerprint_json.get('config_hash', '')}"
-            f"|{fingerprint_json.get('fitcheck_version', '')}"
-            f"|{fingerprint_json.get('timestamp', '')}"
-            f"|{fingerprint_json.get('result_summary', '')}"
+            f"{fingerprint_json_data.get('dataset_hash', '')}"
+            f"|{fingerprint_json_data.get('config_hash', '')}"
+            f"|{fingerprint_json_data.get('fitcheck_version', '')}"
+            f"|{fingerprint_json_data.get('timestamp', '')}"
+            f"|{fingerprint_json_data.get('result_summary', '')}"
         )
         expected = _hmac.HMAC(
             secret_key.encode("utf-8"),

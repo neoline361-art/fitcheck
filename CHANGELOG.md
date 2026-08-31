@@ -5,7 +5,7 @@ All notable changes to FitCheck are documented here.
 ## [4.0.0b1] - 2026-08-31
 
 ### Added
-- **GitHub Action** (`action.yml`): composite action for CI gating — installs FitCheck, runs checks, extracts verdict, uploads report as artifact. Usage: `uses: neoline361-art/fitcheck@v4`
+- **GitHub Action** (`action.yml`): composite action for CI gating — installs FitCheck, runs checks with --json, extracts verdict, uploads report as GitHub Actions artifact. Usage: `uses: neoline361-art/fitcheck@v4`
 - **`--artifact` flag** on `check`, `report`, `drift`, `full` commands: bundles `report.html` + `fingerprint.json` + optional `signature.bin` into a portable `.fitcheck.zip` archive
 - **`fitcheck verify <bundle.zip>`**: verifies artifact bundles — validates fingerprint, HMAC signature, and source data hash
 - **`BaseCheck` ABC** (`plugins.py`): structured, versioned plugin interface with `name`/`version`/`run` abstract methods and `__call__` adapter for backward-compatible legacy callable plugins

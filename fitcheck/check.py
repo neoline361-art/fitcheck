@@ -134,13 +134,13 @@ def check(
         secret_key=secret_key,
     )
     if auto_fix and issues and output is not None:
-            try:
-                from fitcheck.fix import generate_fix_script
+        try:
+            from fitcheck.fix import generate_fix_script
 
-                script_path = str(Path(output).with_suffix("")) + "_fix_script.py"
-                generate_fix_script(result_dict, input_path, script_path)
-            except ImportError:
-                pass
+            script_path = str(Path(output).with_suffix("")) + "_fix_script.py"
+            generate_fix_script(result_dict, input_path, script_path)
+        except ImportError:
+            pass
 
     if return_format == "dict":
         return result_dict

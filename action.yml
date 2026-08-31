@@ -37,14 +37,24 @@ runs:
         if [ -n "${{ inputs.policy }}" ]; then
           POLICY_FLAG="--policy ${{ inputs.policy }}"
         fi
+        # Single run with --json for machine-readable output
         FITCHECK_EXIT=0
-        fitcheck ${{ inputs.command }} --fail-on ${{ inputs.fail-on }} $POLICY_FLAG || FITCHECK_EXIT=$?
+        fitcheck ${{ inputs.command }} --fail-on ${{ inputs.fail-on }} $POLICY_FLAG --json --quiet > /tmp/fitcheck_output.json 2>/dev/null || FITCHECK_EXIT=$?
         echo "exit-code=${FITCHHECK_EXIT}" >> "$GITHUB_OUTPUT"
-        if echo "${{ inputs.command }}" | grep -q -- "--mode decision"; then
-          VERDICT=$(fitcheck ${{ inputs.command }} --fail-on ${{ inputs.fail-on }} $POLICY_FLAG --json --quiet 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('verdict','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
-          echo "verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
-        fi
+        # Extract verdict from JSON output if present
+        VERDICT=$(python3 -c "import sys,json; d=json.load(open('/tmp/fitcheck_output.json')); print(d.get('verdict','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
+        echo "verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
         exit ${FITCHHECK_EXIT}
       shell: bash
       env:
         FITCHECK_SECRET_KEY: ${{ inputs.secret-key }}
+    - name: Upload FitCheck report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fitcheck-report
+        path: |
+          fitcheck_report.html
+          fitcheck_decision_*.html
+          fitcheck_reports/
+        retention-days: 30
