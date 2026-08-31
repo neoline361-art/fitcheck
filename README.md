@@ -117,12 +117,12 @@ For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger 
 ## Screenshots
 
 <p align="center">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/decision-report-banner.png" width="32%" alt="Decision mode verdict banner">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/report-fingerprint-footer.png" width="32%" alt="Tamper-evident fingerprint footer">
   <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-check.png" width="32%" alt="Terminal check output">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/html-report.png" width="32%" alt="Interactive HTML report">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/demo-output.png" width="32%" alt="One-command demo">
 </p>
 
-Terminal check output (left), the interactive Plotly model report (center), and the one-command demo (right).
+Decision mode verdict banner (left), tamper-evident fingerprint footer (center), and classic terminal check output (right).
 
 ## Feature comparison
 
