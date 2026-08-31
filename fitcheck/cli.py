@@ -266,7 +266,7 @@ def _run_check(args: Any) -> int:
                 results[0]["next_action"] = verdict_dict["next_action"]
                 results[0]["clusters"] = verdict_dict["clusters"]
         # Verdict-driven exit codes for decision mode
-        verdict_exit = {"PASS": 0, "WARN": 1, "BLOCK": 2}
+        verdict_exit = {"PASS": 0, "WARN": 1, "BLOCK": 2}  # nosec B105 — verdict status map, not credentials  # nosec B105
         max_exit = verdict_exit.get(verdict.decision, 3)
 
     # --artifact: bundle report + fingerprint + signature into .fitcheck.zip
