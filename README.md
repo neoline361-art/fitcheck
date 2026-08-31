@@ -1,15 +1,35 @@
 <h1 align="center">FitCheck</h1>
-<p align="center"><em>Zero-boilerplate ML data validation, model evaluation, and drift detection.</em></p>
+<p align="center"><em>Zero-Boilerplate ML Data Quality, Drift Detection, Cryptographic Trust & CI/CD Decision Engine</em></p>
 <p align="center">
+  <a href="https://pypi.org/project/data-fitcheck/"><img src="https://img.shields.io/badge/PyPI-v4.0.0b1-blue" alt="PyPI"></a>
   <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/github/actions/workflow/status/neoline361-art/fitcheck/ci.yml?branch=main&logo=github&label=CI" alt="CI"></a>
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="Apache 2.0"></a>
-  <a href="https://github.com/neoline361-art/fitcheck/actions"><img src="https://img.shields.io/badge/Tests-260%20passing-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck"><img src="https://img.shields.io/badge/tests-260%20passed-brightgreen" alt="Tests"></a>
+  <a href="https://github.com/neoline361-art/fitcheck"><img src="https://img.shields.io/badge/coverage-95%25-brightgreen" alt="Coverage"></a>
+  <a href="https://github.com/neoline361-art/fitcheck"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue" alt="Python"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License"></a>
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/fitcheck_one_pager.png" width="85%" alt="FitCheck overview">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-decision-mode.png" width="32%" alt="Decision mode terminal">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/decision-report-banner.png" width="32%" alt="Verdict banner HTML report">
+  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/report-fingerprint-footer.png" width="32%" alt="Cryptographic artifact verification">
 </p>
+
+<p align="center">
+  <em>Decision mode CLI (left), Tamper-evident HTML verdict banner (center), and Cryptographic artifact verification (right).</em>
+</p>
+
+---
+
+### Key Capabilities in v4.0.0-beta
+
+- **Decision Engine:** Automatically returns `PASS` (0), `WARN` (1), or `BLOCK` (2) exit codes with root-cause clustering.
+- **Trust & Provenance:** SHA-256 dataset fingerprinting and HMAC signature signing (`fitcheck verify`).
+- **Artifact Bundles:** Export signed `.fitcheck.zip` archives (report + hash + signature) for immutable audit trails.
+- **Zero Setup CI Gate:** Official GitHub Action (`neoline361-art/fitcheck@v4.0.0b1`) ready for pull request gating.
+- **Extensible Architecture:** Custom assertions via the `BaseCheck` plugin API.
+
+---
 
 FitCheck is a local-first toolkit for answering three questions quickly: **Is this dataset healthy? Is this model behaving? Has production data changed?** Every workflow produces a self-contained HTML report that can be opened locally and shared in a pull request, Slack, or an incident review.
 
@@ -113,16 +133,6 @@ fitcheck.check(
 | Integrations | Optional MLflow logging and DVC metrics callbacks (`log_to_mlflow`, `log_to_dvc`) |
 
 For drift, `method="auto"` uses KS on smaller numeric samples and PSI on larger numeric samples. Use `method="wasserstein"` when a normalized distribution-distance signal is more useful than a hypothesis test.
-
-## Screenshots
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/decision-report-banner.png" width="32%" alt="Decision mode verdict banner">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/report-fingerprint-footer.png" width="32%" alt="Tamper-evident fingerprint footer">
-  <img src="https://raw.githubusercontent.com/neoline361-art/fitcheck/main/assets/screenshots/terminal-check.png" width="32%" alt="Terminal check output">
-</p>
-
-Decision mode verdict banner (left), tamper-evident fingerprint footer (center), and classic terminal check output (right).
 
 ## Feature comparison
 
